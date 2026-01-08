@@ -36,6 +36,7 @@ jobs:
           
           echo "REPORT_HTML<<EOF" >> $GITHUB_ENV
           cat report.html >> $GITHUB_ENV
+          echo "" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Send Email via Gmail
