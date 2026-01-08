@@ -30,14 +30,17 @@ def fetch_copper_box_events():
             
         title = title_tag.get_text(strip=True)
         
-        # Filter: No Football
-        if 'football' in title.lower() or 'baller league' in title.lower():
+        # Filter: No Football or Netball
+        t_low = title.lower()
+        if 'football' in t_low or 'baller league' in t_low:
+            continue
+        if 'netball' in t_low or 'pulse' in t_low or 'london pulse' in t_low:
             continue
             
         description_div = container.find('div', style=re.compile(r'max-height:75px'))
         description = description_div.get_text(strip=True) if description_div else ""
         
-        if 'football' in description.lower():
+        if 'football' in description.lower() or 'netball' in description.lower():
             continue
 
         link_tag = container.find('a', string='Find out more')

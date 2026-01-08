@@ -8,6 +8,7 @@ from scrapers.theatre import fetch_stratford_east_events
 from scrapers.here_east import fetch_here_east_events
 from scrapers.tennis import fetch_tennis_events
 from scrapers.va_east import fetch_va_events
+from scrapers.sadlers import fetch_sadlers_events
 
 def main():
     print("Starting event collection...")
@@ -23,7 +24,8 @@ def main():
         (fetch_stratford_east_events, "Theatre"),
         (fetch_here_east_events, "Here East"),
         (fetch_tennis_events, "Tennis"),
-        (fetch_va_events, "V&A East")
+        (fetch_va_events, "V&A East"),
+        (fetch_sadlers_events, "Sadler's Wells")
     ]
     
     for scraper_func, name in scrapers:
@@ -92,7 +94,7 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Other']
+    cat_order = ['STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'Other']
     
     for e in filtered_events:
         cat = e.get('category', 'Other')
