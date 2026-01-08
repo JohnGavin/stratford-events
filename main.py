@@ -7,6 +7,7 @@ from scrapers.sports import fetch_copper_box_events
 from scrapers.theatre import fetch_stratford_east_events
 from scrapers.here_east import fetch_here_east_events
 from scrapers.tennis import fetch_tennis_events
+from scrapers.va_east import fetch_va_events
 
 def main():
     print("Starting event collection...")
@@ -21,7 +22,8 @@ def main():
         (fetch_copper_box_events, "Sports"),
         (fetch_stratford_east_events, "Theatre"),
         (fetch_here_east_events, "Here East"),
-        (fetch_tennis_events, "Tennis")
+        (fetch_tennis_events, "Tennis"),
+        (fetch_va_events, "V&A East")
     ]
     
     for scraper_func, name in scrapers:
