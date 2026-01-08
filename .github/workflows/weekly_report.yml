@@ -27,6 +27,17 @@ jobs:
       - name: Generate Report
         run: python main.py
 
+      - name: Read Report Content
+        id: read_report
+        run: |
+          # Read file, escape newlines/quotes for GHA output if needed, 
+          # but simpler to just use an env var for the next step or read directly.
+          # We will read it into a step output variable properly handling multiline.
+          
+          echo "REPORT_HTML<<EOF" >> $GITHUB_ENV
+          cat report.html >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Send Email via Gmail
         uses: dawidd6/action-send-mail@v3
         with:
@@ -38,6 +49,6 @@ jobs:
           subject: Stratford Events Weekly Report - ${{ github.event.repository.updated_at }}
           to: ttmmghmm+gemini@gmail.com
           from: Stratford Events Bot <${{ secrets.GMAIL_USERNAME }}>
-          body: "Here is your weekly Stratford Events report. Please enable HTML to view the full list."
-          html_body: file://report.html
+          body: "Please enable HTML to view this report."
+          html_body: ${{ env.REPORT_HTML }}
           convert_markdown: false
