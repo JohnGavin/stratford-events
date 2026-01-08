@@ -35,36 +35,6 @@ def main():
         except Exception as e:
             print(f"Error fetching {name}: {e}")
 
-    # Add Static / Informational Sections for Hard-to-Scrape Targets
-    # Westfield Shopping Centre
-    all_events.append({
-        'title': "Westfield Stratford City Events & Offers",
-        'date_str': "Ongoing",
-        'date_obj': datetime.datetime.now() + datetime.timedelta(days=365), # Always future
-        'location': "Westfield Stratford City",
-        'description': "Check the official 'What's On' page for pop-up shops, cinema screenings, and seasonal events.",
-        'url': "https://uk.westfield.com/stratfordcity/events",
-        'category': 'Westfield / Shopping',
-        'sub_category': 'General',
-        'price': "Varies",
-        'source': 'Static Link'
-    })
-    
-    # Restaurants / East Village
-    all_events.append({
-        'title': "East Village: Eat, Drink, Shop",
-        'date_str': "Ongoing",
-        'date_obj': datetime.datetime.now() + datetime.timedelta(days=365),
-        'location': "East Village E20",
-        'description': "Explore new restaurant openings and events in the former Athletes' Village.",
-        'url': "https://www.eastvillagelondon.co.uk/whats-on",
-        'category': 'East Village',
-        'sub_category': 'Dining & Events',
-        'price': "Varies",
-        'source': 'Static Link'
-    })
-
-
     # Deduplicate and Clean
     unique_events = {}
     for e in all_events:
@@ -76,7 +46,8 @@ def main():
     filtered_events = []
     forbidden = [
         'football', 'musical', 'dance', 'pantomime', 'panto', 'ballet', 'opera',
-        'women', 'woman', 'ladies', 'kid', 'child', 'junior', 'boy', 'girl', 'family'
+        'women', 'woman', 'ladies', 'kid', 'child', 'junior', 'boy', 'girl', 'family',
+        'netball'
     ]
     
     # Use timezone-aware UTC now for comparison if possible, or naive if dates are naive
@@ -88,16 +59,17 @@ def main():
         if any(word in text for word in forbidden):
             continue
         
-        # Date Filter: Exclude past events
-        # Events with no date_obj (None) are kept (assume 'See website' or 'Ongoing')
-        if e.get('date_obj'):
-            dt = e['date_obj']
-            # Make naive datetimes aware (assume local/system time)
-            if dt.tzinfo is None:
-                dt = dt.astimezone()
-                
-            if dt < now:
-                continue
+        # Date Filter: STRICT - Must have date_obj
+        if not e.get('date_obj'):
+            # Drop events without a valid parsed date
+            continue
+            
+        dt = e['date_obj']
+        if dt.tzinfo is None:
+            dt = dt.astimezone()
+            
+        if dt < now:
+            continue
         
         # Ensure sub_category exists
         if 'sub_category' not in e:

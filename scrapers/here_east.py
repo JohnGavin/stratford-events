@@ -19,7 +19,6 @@ def fetch_here_east_events():
     soup = BeautifulSoup(response.text, 'html.parser')
     events = []
     
-    # Event tiles
     tiles = soup.find_all('h3', class_='EventTile__title')
     
     for title_tag in tiles:
@@ -30,18 +29,54 @@ def fetch_here_east_events():
         if container and container.get('href'):
             event_url = "https://hereeast.com" + container.get('href')
             
-        parent = title_tag.parent
-        date_raw = "See website"
-        date_tag = parent.find('div', class_='EventTile__date')
-        if date_tag:
-            date_raw = date_tag.get_text(strip=True)
+        # Deep Scrape
+        try:
+            res_detail = requests.get(event_url, headers=headers)
+            soup_detail = BeautifulSoup(res_detail.text, 'html.parser')
+            
+            # Summary - usually in first paragraph of content
+            # Inspect structure on page... usually 'ContentBlock' or similar
+            description = ""
+            desc_tag = soup_detail.find('div', class_='RichText') 
+            if desc_tag:
+                # Get first decent paragraph
+                for p in desc_tag.find_all('p'):
+                    text = p.get_text(strip=True)
+                    if len(text) > 30:
+                        description = text
+                        break
+            
+            # Date
+            date_raw = "See website"
+            # Here East detail pages often have a specific date block
+            # Fallback to the list page date if needed, but detail is better
+            # Let's assume list page date was 'EventTile__date'
+            
+            # Price
+            # Look for "Price" or "£" in text
+            price_str = "Check website"
+            body_text = soup_detail.get_text()
+            if '£' in body_text:
+                price_str = normalize_price(body_text)
+            elif 'Free' in body_text:
+                price_str = "Free"
+                
+            # Date from list page is often easiest/safest as fallback
+            # but let's re-parse
+            date_tag = title_tag.parent.find('div', class_='EventTile__date')
+            if date_tag:
+                date_raw = date_tag.get_text(strip=True)
 
-        date_obj = parse_event_date(date_raw) # Attempt fuzzy parse
-        date_str = date_raw
-        if date_obj:
-            date_str = date_obj.strftime("%a, %d %b %Y")
+        except Exception as e:
+            print(f"Error scraping detail {event_url}: {e}")
+            description = "Click link for details."
+            date_raw = "See website"
+            price_str = "Check website"
 
-        # Sub-category
+        date_obj = parse_event_date(date_raw)
+        
+        # Mandatory Date check logic happens in main.py, but we try our best here
+        
         sub_cat = 'Tech/Innovation'
         if 'market' in title.lower(): sub_cat = 'Market'
         elif 'cinema' in title.lower(): sub_cat = 'Cinema'
@@ -49,12 +84,12 @@ def fetch_here_east_events():
         events.append({
             'title': title,
             'url': event_url,
-            'description': "Event at Here East campus.",
-            'date_str': date_str,
+            'description': description,
+            'date_str': date_raw,
             'date_obj': date_obj,
             'category': 'STEM / Factual',
             'sub_category': sub_cat,
-            'price': "Check website",
+            'price': price_str,
             'source': 'Here East'
         })
         
