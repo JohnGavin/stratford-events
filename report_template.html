@@ -2,38 +2,54 @@
 <html>
 <head>
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
-        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #e67e22; margin-top: 30px; }
-        .event { margin-bottom: 20px; border-left: 4px solid #3498db; padding-left: 15px; }
-        .title { font-weight: bold; font-size: 1.2em; }
-        .meta { color: #7f8c8d; font-size: 0.9em; }
-        .description { margin-top: 5px; }
-        .source { font-style: italic; color: #95a5a6; }
-        a { color: #3498db; text-decoration: none; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f9f9f9; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
+        h2 { color: #2c3e50; margin-top: 40px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; }
+        h3 { color: #7f8c8d; margin-top: 20px; font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px; }
+        .event { margin-bottom: 15px; background: #fff; padding: 15px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 5px solid #3498db; }
+        .event:hover { box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .title { font-weight: bold; font-size: 1.2em; color: #2980b9; }
+        .meta { color: #7f8c8d; font-size: 0.9em; margin: 5px 0; font-weight: 500; }
+        .price { color: #e67e22; font-weight: bold; }
+        .description { margin-top: 10px; color: #555; }
+        .source { font-style: italic; color: #95a5a6; font-size: 0.8em; margin-top: 10px; text-align: right; }
+        a { color: #2980b9; text-decoration: none; }
         a:hover { text-decoration: underline; }
+        .footer { margin-top: 50px; text-align: center; color: #aaa; font-size: 0.8em; }
     </style>
 </head>
 <body>
     <h1>Stratford Events Weekly Report</h1>
-    <p>Upcoming events in the Stratford area (E15/E20) focusing on STEM, Sports (non-football), and Theatre (non-musical).</p>
+    <p>Your curated guide to upcoming STEM, Sports, and Culture in Stratford (E15/E20).</p>
 
-    {% for category, items in events_by_category.items() %}
-        {% if items %}
+    {% for category in category_order %}
+        {% if category in grouped_events and grouped_events[category] %}
             <h2>{{ category }}</h2>
-            {% for event in items %}
-                <div class="event">
-                    <div class="title"><a href="{{ event.url }}">{{ event.title }}</a></div>
-                    <div class="meta">{{ event.date_str }} | {{ event.location if event.location else event.source }}</div>
-                    <div class="description">{{ event.description }}</div>
-                    <div class="source">Source: {{ event.source }}</div>
-                </div>
+            
+            {% for sub_cat, events in grouped_events[category].items() %}
+                {% if events %}
+                    <h3>{{ sub_cat }}</h3>
+                    {% for event in events %}
+                        <div class="event">
+                            <div class="title"><a href="{{ event.url }}">{{ event.title }}</a></div>
+                            <div class="meta">
+                                {{ event.date_str }} | {{ event.location }}
+                                {% if event.price %}
+                                    | <span class="price">{{ event.price }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="description">{{ event.description }}</div>
+                            <div class="source">Source: {{ event.source }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
             {% endfor %}
+            
         {% endif %}
     {% endfor %}
 
-    <p style="margin-top: 40px; font-size: 0.8em; color: #bdc3c7;">
-        Report generated on {{ today }}
-    </p>
+    <div class="footer">
+        Generated on {{ today }} for personal use.
+    </div>
 </body>
 </html>

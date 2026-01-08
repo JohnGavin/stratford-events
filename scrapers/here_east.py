@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+from datetime import datetime
+from utils.common import parse_event_date, normalize_price
 
 def fetch_here_east_events():
     url = "https://hereeast.com/events/"
@@ -23,26 +25,36 @@ def fetch_here_east_events():
     for title_tag in tiles:
         title = title_tag.get_text(strip=True).replace('.', '')
         
-        # Link is usually in an ancestor
         container = title_tag.find_parent('a')
         event_url = url
         if container and container.get('href'):
             event_url = "https://hereeast.com" + container.get('href')
             
-        # Try to find date in siblings or parent
-        # Based on typical Here East structure
         parent = title_tag.parent
-        date_str = "See website"
+        date_raw = "See website"
         date_tag = parent.find('div', class_='EventTile__date')
         if date_tag:
-            date_str = date_tag.get_text(strip=True)
+            date_raw = date_tag.get_text(strip=True)
+
+        date_obj = parse_event_date(date_raw) # Attempt fuzzy parse
+        date_str = date_raw
+        if date_obj:
+            date_str = date_obj.strftime("%a, %d %b %Y")
+
+        # Sub-category
+        sub_cat = 'Tech/Innovation'
+        if 'market' in title.lower(): sub_cat = 'Market'
+        elif 'cinema' in title.lower(): sub_cat = 'Cinema'
 
         events.append({
             'title': title,
             'url': event_url,
-            'description': '',
+            'description': "Event at Here East campus.",
             'date_str': date_str,
-            'category': 'Tech/Innovation',
+            'date_obj': date_obj,
+            'category': 'STEM / Factual',
+            'sub_category': sub_cat,
+            'price': "Check website",
             'source': 'Here East'
         })
         

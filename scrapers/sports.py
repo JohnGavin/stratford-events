@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 import re
+from datetime import datetime
+from utils.common import parse_event_date, normalize_price
 
 def fetch_copper_box_events():
     url = "https://copperboxarena.org.uk/events"
@@ -30,7 +32,6 @@ def fetch_copper_box_events():
         
         # Filter: No Football
         if 'football' in title.lower() or 'baller league' in title.lower():
-            # Baller League is often football-based
             continue
             
         description_div = container.find('div', style=re.compile(r'max-height:75px'))
@@ -42,22 +43,40 @@ def fetch_copper_box_events():
         link_tag = container.find('a', string='Find out more')
         event_url = "https://copperboxarena.org.uk" + link_tag.get('href') if link_tag else url
         
-        # Date is in the text nodes of the div containing the title
+        # Date Logic
         content_div = title_tag.parent
         date_str = "See website"
-        # The date is usually after the title in the text
+        date_obj = None
+        
         text_content = content_div.get_text(" | ", strip=True)
-        # Try to extract date like "Jan 11, 2026"
         date_match = re.search(r'([A-Z][a-z]{2}\s\d{1,2},\s\d{4})', text_content)
         if date_match:
-            date_str = date_match.group(1)
+            raw_date = date_match.group(1)
+            date_obj = datetime.strptime(raw_date, "%b %d, %Y")
+            date_str = date_obj.strftime("%a, %d %b %Y")
+
+        # Sub-category
+        t_low = title.lower()
+        sub_cat = 'General Sport'
+        if 'basketball' in t_low or 'lions' in t_low:
+            sub_cat = 'Basketball'
+        elif 'netball' in t_low or 'pulse' in t_low:
+            sub_cat = 'Netball'
+        elif 'boxing' in t_low or 'fight' in t_low:
+            sub_cat = 'Boxing'
+
+        # Price (This site usually requires clicking through, so default to Check Website)
+        price_str = "Check website"
 
         events.append({
             'title': title,
             'url': event_url,
             'description': description,
             'date_str': date_str,
+            'date_obj': date_obj,
             'category': 'Sports',
+            'sub_category': sub_cat,
+            'price': price_str,
             'source': 'Copper Box Arena'
         })
         
