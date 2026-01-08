@@ -35,11 +35,20 @@ def fetch_ucl_events():
         if any(word in title.lower() or word in summary.lower() for word in ['dance', 'musical', 'ballet', 'opera']):
             continue
             
+        date_raw = meta.get('UclEventStartDate', '')
+        date_str = 'See website'
+        if date_raw:
+            try:
+                dt = datetime.fromisoformat(date_raw)
+                date_str = dt.strftime("%a, %d %b %Y @ %H:%M")
+            except ValueError:
+                date_str = date_raw
+
         event = {
             'title': title,
             'url': res.get('liveUrl', ''),
             'description': summary,
-            'date_str': meta.get('UclEventStartDate', 'See website'),
+            'date_str': date_str,
             'location': meta.get('UclEventLocation', 'UCL East'),
             'category': 'STEM/Factual',
             'source': 'UCL East'

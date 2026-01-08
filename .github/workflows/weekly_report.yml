@@ -38,6 +38,6 @@ jobs:
           subject: Stratford Events Weekly Report - ${{ github.event.repository.updated_at }}
           to: ttmmghmm+gemini@gmail.com
           from: Stratford Events Bot <${{ secrets.GMAIL_USERNAME }}>
-          body: file://report.html
+          body: "Here is your weekly Stratford Events report. Please enable HTML to view the full list."
           html_body: file://report.html
           convert_markdown: false
