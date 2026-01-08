@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #e67e22; margin-top: 30px; }
+        .event { margin-bottom: 20px; border-left: 4px solid #3498db; padding-left: 15px; }
+        .title { font-weight: bold; font-size: 1.2em; }
+        .meta { color: #7f8c8d; font-size: 0.9em; }
+        .description { margin-top: 5px; }
+        .source { font-style: italic; color: #95a5a6; }
+        a { color: #3498db; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Stratford Events Weekly Report</h1>
+    <p>Upcoming events in the Stratford area (E15/E20) focusing on STEM, Sports (non-football), and Theatre (non-musical).</p>
+
+    {% for category, items in events_by_category.items() %}
+        {% if items %}
+            <h2>{{ category }}</h2>
+            {% for event in items %}
+                <div class="event">
+                    <div class="title"><a href="{{ event.url }}">{{ event.title }}</a></div>
+                    <div class="meta">{{ event.date_str }} | {{ event.location if event.location else event.source }}</div>
+                    <div class="description">{{ event.description }}</div>
+                    <div class="source">Source: {{ event.source }}</div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
+
+    <p style="margin-top: 40px; font-size: 0.8em; color: #bdc3c7;">
+        Report generated on {{ today }}
+    </p>
+</body>
+</html>

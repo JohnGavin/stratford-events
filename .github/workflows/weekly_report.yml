@@ -1,0 +1,41 @@
+name: Weekly Stratford Events Report
+
+on:
+  schedule:
+    - cron: '0 8 * * 1' # Every Monday at 08:00 UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate Report
+        run: python main.py
+
+      - name: Send Email via Gmail
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          secure: true
+          username: ${{ secrets.GMAIL_USERNAME }}
+          password: ${{ secrets.GMAIL_APP_PASSWORD }}
+          subject: Stratford Events Weekly Report - ${{ github.event.repository.updated_at }}
+          to: ttmmghmm+gemini@gmail.com
+          from: Stratford Events Bot <${{ secrets.GMAIL_USERNAME }}>
+          body: file://report.html
+          html_body: file://report.html
+          convert_markdown: false
