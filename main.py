@@ -9,6 +9,8 @@ from scrapers.here_east import fetch_here_east_events
 from scrapers.tennis import fetch_tennis_events
 from scrapers.va_east import fetch_va_events
 from scrapers.sadlers import fetch_sadlers_events
+from scrapers.gsmd import fetch_gsmd_events
+from scrapers.alerts import fetch_google_alerts
 
 def main():
     print("Starting event collection...")
@@ -25,7 +27,9 @@ def main():
         (fetch_here_east_events, "Here East"),
         (fetch_tennis_events, "Tennis"),
         (fetch_va_events, "V&A East"),
-        (fetch_sadlers_events, "Sadler's Wells")
+        (fetch_sadlers_events, "Sadler's Wells"),
+        (fetch_gsmd_events, "Guildhall School"),
+        (fetch_google_alerts, "News")
     ]
     
     for scraper_func, name in scrapers:
@@ -94,7 +98,7 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'Other']
+    cat_order = ['STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other']
     
     for e in filtered_events:
         cat = e.get('category', 'Other')
