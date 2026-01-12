@@ -5,13 +5,14 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
 ## Project Criteria & Goals
 
 *   **Focus Areas:**
+    *   **Dining / Restaurants:** New openings, offers, and food news in Stratford/Westfield.
     *   **STEM / Factual:** Lectures, exhibitions, cinema, and workshops (e.g., UCL East, Here East).
     *   **Sports:** Non-football focus (e.g., Basketball at Copper Box, Tennis at Lea Valley/Stratford Park).
     *   **Culture:** Theatre plays (excluding musicals/dance).
     *   **Local Life:** Riverside East, East Village, and Westfield updates.
 *   **Filters:**
     *   **Exclude:** Football, Musicals, Dance, Pantomime, Kids/Family-specific events, Women-only events.
-    *   **Exclude:** Expired events (globally filtered).
+    *   **Exclude:** Expired events (globally filtered, except recent news).
     *   **Exclude:** Non-public (Staff/Student only) UCL events.
 *   **Sorting & Grouping:**
     *   Events are grouped by Category > Sub-category (e.g., Sports > Basketball).
@@ -24,6 +25,7 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
 ## Architecture
 
 *   **Scrapers (`scrapers/`):** Modular Python scripts using `requests` and `BeautifulSoup`.
+    *   `dining.py`: Fetches restaurant news and offers via Google News RSS.
     *   `ucl.py`: Fetches from UCL East Funnelback API (JSON).
     *   `sports.py`: Scrapes Copper Box Arena.
     *   `theatre.py`: Scrapes Stratford East.
