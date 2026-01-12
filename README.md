@@ -27,8 +27,10 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
 *   **Scrapers (`scrapers/`):** Modular Python scripts using `requests` and `BeautifulSoup`.
     *   `dining.py`: Fetches restaurant news and offers via Google News RSS.
     *   `aquatics.py`: Scrapes London Aquatics Centre events.
+    *   `barbican.py`: Scrapes Barbican Centre (next 14 days only).
     *   `ucl.py`: Fetches from UCL East Funnelback API (JSON).
     *   `sports.py`: Scrapes Copper Box Arena.
+    *   `gsmd.py`: Scrapes Guildhall School (East Bank only, next 14 days).
     *   `theatre.py`: Scrapes Stratford East.
     *   `qeop.py`: Scrapes Queen Elizabeth Olympic Park.
     *   `here_east.py`: Scrapes Here East.

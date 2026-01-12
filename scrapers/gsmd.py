@@ -101,6 +101,19 @@ def fetch_gsmd_events():
 
         date_obj = parse_event_date(date_raw)
         
+        # 14-Day Filter (User Request)
+        if date_obj:
+            now = datetime.now()
+            # Handle potential timezone mismatch
+            if date_obj.tzinfo is None and now.tzinfo is not None:
+                now = now.replace(tzinfo=None)
+            elif date_obj.tzinfo is not None and now.tzinfo is None:
+                now = now.astimezone()
+                
+            delta = date_obj - now
+            if delta.days > 14:
+                continue
+        
         events.append({
             'title': title,
             'url': event_url,

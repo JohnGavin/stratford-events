@@ -13,6 +13,7 @@ from scrapers.gsmd import fetch_gsmd_events
 from scrapers.alerts import fetch_google_alerts
 from scrapers.dining import fetch_dining_news
 from scrapers.aquatics import fetch_aquatics_events
+from scrapers.barbican import fetch_barbican_events
 
 def main():
     print("Starting event collection...")
@@ -33,7 +34,8 @@ def main():
         (fetch_gsmd_events, "Guildhall School"),
         (fetch_google_alerts, "News"),
         (fetch_dining_news, "Dining & Offers"),
-        (fetch_aquatics_events, "Aquatics")
+        (fetch_aquatics_events, "Aquatics"),
+        (fetch_barbican_events, "Barbican")
     ]
     
     for scraper_func, name in scrapers:
