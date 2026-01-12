@@ -12,6 +12,7 @@ from scrapers.sadlers import fetch_sadlers_events
 from scrapers.gsmd import fetch_gsmd_events
 from scrapers.alerts import fetch_google_alerts
 from scrapers.dining import fetch_dining_news
+from scrapers.aquatics import fetch_aquatics_events
 
 def main():
     print("Starting event collection...")
@@ -31,7 +32,8 @@ def main():
         (fetch_sadlers_events, "Sadler's Wells"),
         (fetch_gsmd_events, "Guildhall School"),
         (fetch_google_alerts, "News"),
-        (fetch_dining_news, "Dining & Offers")
+        (fetch_dining_news, "Dining & Offers"),
+        (fetch_aquatics_events, "Aquatics")
     ]
     
     for scraper_func, name in scrapers:
@@ -102,7 +104,7 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['Dining & Offers', 'STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other']
+    cat_order = ['Dining & Offers', 'STEM / Factual', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other', 'Sports']
     
     for e in filtered_events:
         cat = e.get('category', 'Other')
@@ -114,6 +116,25 @@ def main():
             grouped_events[cat][sub] = []
             
         grouped_events[cat][sub].append(e)
+
+    # Post-Processing: Limit specific sub-categories
+    # Basketball and Boxing: Show only the next upcoming event (events are already sorted by date)
+    if 'Sports' in grouped_events:
+        for sub in ['Basketball', 'Boxing']:
+            if sub in grouped_events['Sports']:
+                grouped_events['Sports'][sub] = grouped_events['Sports'][sub][:1]
+                
+    # Reorder Sports sub-categories: Tennis, Padel, then others
+    if 'Sports' in grouped_events:
+        sports_dict = grouped_events['Sports']
+        ordered_sports = {}
+        # Priority keys
+        for key in ['Tennis', 'Padel']:
+            if key in sports_dict:
+                ordered_sports[key] = sports_dict.pop(key)
+        # Remaining keys (alphabetical or date sorted? currently date sorted by insertion)
+        ordered_sports.update(sports_dict)
+        grouped_events['Sports'] = ordered_sports
 
     # Generate Report
     env = Environment(loader=FileSystemLoader('.'))

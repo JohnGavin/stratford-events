@@ -36,7 +36,12 @@ def fetch_tennis_events():
                 if not title_tag: continue
                 title = title_tag.get_text(strip=True)
                 
-                if 'tennis' not in title.lower(): continue
+                # Check for Tennis OR Padel
+                if 'tennis' not in title.lower() and 'padel' not in title.lower(): continue
+                
+                sub_cat = 'Tennis'
+                if 'padel' in title.lower():
+                    sub_cat = 'Padel'
                 
                 # Check for dates
                 text = art.get_text()
@@ -66,7 +71,7 @@ def fetch_tennis_events():
                         'date_str': date_str,
                         'date_obj': date_obj,
                         'category': 'Sports',
-                        'sub_category': 'Tennis',
+                        'sub_category': sub_cat,
                         'price': "Check website",
                         'source': 'Lea Valley Tennis'
                     })
