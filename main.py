@@ -11,6 +11,7 @@ from scrapers.va_east import fetch_va_events
 from scrapers.sadlers import fetch_sadlers_events
 from scrapers.gsmd import fetch_gsmd_events
 from scrapers.alerts import fetch_google_alerts
+from scrapers.dining import fetch_dining_news
 
 def main():
     print("Starting event collection...")
@@ -29,7 +30,8 @@ def main():
         (fetch_va_events, "V&A East"),
         (fetch_sadlers_events, "Sadler's Wells"),
         (fetch_gsmd_events, "Guildhall School"),
-        (fetch_google_alerts, "News")
+        (fetch_google_alerts, "News"),
+        (fetch_dining_news, "Dining & Offers")
     ]
     
     for scraper_func, name in scrapers:
@@ -76,7 +78,9 @@ def main():
         if dt.tzinfo is None:
             dt = dt.astimezone()
             
-        if dt < now:
+        # Allow recent news/offers even if in the past
+        is_news = e.get('category') in ['News & Alerts', 'Dining & Offers']
+        if dt < now and not is_news:
             continue
         
         # Ensure sub_category exists
@@ -98,7 +102,7 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other']
+    cat_order = ['Dining & Offers', 'STEM / Factual', 'Sports', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other']
     
     for e in filtered_events:
         cat = e.get('category', 'Other')
