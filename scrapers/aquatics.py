@@ -32,6 +32,10 @@ def fetch_aquatics_events():
         if not title_tag: continue
         title = title_tag.get_text(strip=True)
         
+        # Filter generic updates/disruptions
+        if any(x in title.lower() for x in ['disruption', 'closure', 'update', 'info', 'notice']):
+            continue
+
         # Link
         link_tag = title_tag.find('a')
         event_url = url
