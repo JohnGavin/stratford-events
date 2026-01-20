@@ -64,17 +64,4 @@ def fetch_st_brides_events():
             'source': 'St Brides'
         })
         
-    if not events:
-        events.append({
-            'title': "St Brides Events / Concerts",
-            'url': url,
-            'description': "Check website for upcoming free lunchtime recitals and services.",
-            'date_str': "See website",
-            'date_obj': datetime.now() + timedelta(days=7),
-            'category': 'Lunchtime Concerts / Free Events',
-            'sub_category': 'St Brides',
-            'price': "Free",
-            'source': 'St Brides'
-        })
-        
     return events
