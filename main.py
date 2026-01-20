@@ -67,7 +67,7 @@ def main():
     forbidden = [
         'football', 'musical', 'dance', 'pantomime', 'panto', 'ballet', 'opera',
         'women', 'woman', 'ladies', 'kid', 'child', 'junior', 'boy', 'girl', 'family',
-        'netball'
+        'netball', 'disruption', 'closure', 'notice', 'announcement', 'road close'
     ]
     
     # Use timezone-aware UTC now for comparison if possible, or naive if dates are naive
