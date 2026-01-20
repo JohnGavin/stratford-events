@@ -2,7 +2,6 @@ name: Weekly Stratford Events Report
 
 on:
   push:
-    # Run on all branches
   schedule:
     - cron: '0 8 * * 1' # Every Monday at 08:00 UTC
   workflow_dispatch: # Allow manual trigger
