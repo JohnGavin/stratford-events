@@ -54,6 +54,12 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
 1.  **Secrets:** Set `GMAIL_USERNAME` and `GMAIL_APP_PASSWORD` in GitHub Repository Secrets.
 2.  **Run:** Trigger manually via Actions tab or wait for schedule.
 
+## Development Workflow
+
+1.  **Branching:** Always create a new feature branch for changes (e.g., `feature/add-scraper`, `fix/date-parsing`). Do NOT push directly to `main`.
+2.  **Testing:** Push your branch to GitHub. The CI workflow will automatically run to generate the report and verify the code.
+3.  **Merge:** Only raise a Pull Request (PR) to merge into `main` after the CI jobs on your branch have succeeded.
+
 ## Future Improvements
 
 *   Dynamic scraping for Westfield/Restaurants (currently static).
