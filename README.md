@@ -6,7 +6,8 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
 
 *   **Focus Areas:**
     *   **Dining / Restaurants:** New openings, offers, and food news in Stratford/Westfield.
-    *   **STEM / Factual:** Lectures, exhibitions, cinema, and workshops (e.g., UCL East, Here East).
+    *   **Lunchtime Concerts / Free Events:** Free cultural events from LSO, Barbican, GSMD, St Brides.
+    *   **STEM / Factual:** Lectures, exhibitions, cinema, and workshops (e.g., UCL East, Here East, Barts North Wing).
     *   **Sports:** Non-football focus (e.g., Basketball at Copper Box, Tennis at Lea Valley/Stratford Park).
     *   **Culture:** Theatre plays (excluding musicals/dance).
     *   **Local Life:** Riverside East, East Village, and Westfield updates.
@@ -28,6 +29,9 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
     *   `dining.py`: Fetches restaurant news and offers via Google News RSS.
     *   `aquatics.py`: Scrapes London Aquatics Centre events.
     *   `barbican.py`: Scrapes Barbican Centre (next 14 days only).
+    *   `lso.py`: Scrapes LSO Free Friday Lunchtime Concerts.
+    *   `barts_north_wing.py`: Scrapes Barts North Wing public events.
+    *   `st_brides.py`: Scrapes St Brides events.
     *   `ucl.py`: Fetches from UCL East Funnelback API (JSON).
     *   `sports.py`: Scrapes Copper Box Arena.
     *   `gsmd.py`: Scrapes Guildhall School (East Bank only, next 14 days).

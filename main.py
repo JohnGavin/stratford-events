@@ -14,6 +14,9 @@ from scrapers.alerts import fetch_google_alerts
 from scrapers.dining import fetch_dining_news
 from scrapers.aquatics import fetch_aquatics_events
 from scrapers.barbican import fetch_barbican_events
+from scrapers.lso import fetch_lso_events
+from scrapers.barts_north_wing import fetch_barts_north_wing_events
+from scrapers.st_brides import fetch_st_brides_events
 
 def main():
     print("Starting event collection...")
@@ -35,7 +38,10 @@ def main():
         (fetch_google_alerts, "News"),
         (fetch_dining_news, "Dining & Offers"),
         (fetch_aquatics_events, "Aquatics"),
-        (fetch_barbican_events, "Barbican")
+        (fetch_barbican_events, "Barbican"),
+        (fetch_lso_events, "LSO"),
+        (fetch_barts_north_wing_events, "Barts North Wing"),
+        (fetch_st_brides_events, "St Brides")
     ]
     
     for scraper_func, name in scrapers:
@@ -87,6 +93,11 @@ def main():
         if dt < now and not is_news:
             continue
         
+        # Recategorize Free events from specific sources
+        if e.get('source') in ['Barbican', 'Guildhall School']:
+            if e.get('price') == 'Free':
+                e['category'] = 'Lunchtime Concerts / Free Events'
+
         # Ensure sub_category exists
         if 'sub_category' not in e:
             e['sub_category'] = 'General'
@@ -106,7 +117,7 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['Dining & Offers', 'STEM / Factual', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other', 'Sports']
+    cat_order = ['Dining & Offers', 'Lunchtime Concerts / Free Events', 'STEM / Factual', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other', 'Sports']
     
     for e in filtered_events:
         cat = e.get('category', 'Other')
