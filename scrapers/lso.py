@@ -58,18 +58,4 @@ def fetch_lso_events():
             'source': 'LSO'
         })
         
-    if not events:
-        # Fallback to ensure category appears
-        events.append({
-            'title': "Check LSO Free Lunchtime Concerts",
-            'url': url,
-            'description': "Weekly free concerts. Check website for schedule.",
-            'date_str': "Fridays",
-            'date_obj': datetime.now() + timedelta(days=7),
-            'category': 'Lunchtime Concerts / Free Events',
-            'sub_category': 'LSO St Luke\'s',
-            'price': "Free",
-            'source': 'LSO'
-        })
-        
     return events
