@@ -17,6 +17,8 @@ from scrapers.barbican import fetch_barbican_events
 from scrapers.lso import fetch_lso_events
 from scrapers.barts_north_wing import fetch_barts_north_wing_events
 from scrapers.st_brides import fetch_st_brides_events
+from scrapers.great_st_barts import fetch_great_st_barts_events
+from scrapers.st_stephen import fetch_st_stephen_events
 
 def main():
     print("Starting event collection...")
@@ -41,7 +43,9 @@ def main():
         (fetch_barbican_events, "Barbican"),
         (fetch_lso_events, "LSO"),
         (fetch_barts_north_wing_events, "Barts North Wing"),
-        (fetch_st_brides_events, "St Brides")
+        (fetch_st_brides_events, "St Brides"),
+        (fetch_great_st_barts_events, "Great St Barts"),
+        (fetch_st_stephen_events, "St Stephen Walbrook")
     ]
     
     for scraper_func, name in scrapers:
@@ -67,7 +71,7 @@ def main():
     forbidden = [
         'football', 'musical', 'dance', 'pantomime', 'panto', 'ballet', 'opera',
         'women', 'woman', 'ladies', 'kid', 'child', 'junior', 'boy', 'girl', 'family',
-        'netball'
+        'netball', 'road close'
     ]
     
     # Use timezone-aware UTC now for comparison if possible, or naive if dates are naive
@@ -94,7 +98,7 @@ def main():
             continue
         
         # Recategorize Free events from specific sources
-        if e.get('source') in ['Barbican', 'Guildhall School']:
+        if e.get('source') in ['Barbican', 'Guildhall School', 'Great St Barts', 'St Stephen Walbrook']:
             if e.get('price') == 'Free':
                 e['category'] = 'Lunchtime Concerts / Free Events'
 
@@ -131,12 +135,47 @@ def main():
         grouped_events[cat][sub].append(e)
 
     # Post-Processing: Limit specific sub-categories
-    # Basketball and Boxing: Show only the next upcoming event (events are already sorted by date)
+    # Basketball and Boxing: Show only the next upcoming event
     if 'Sports' in grouped_events:
         for sub in ['Basketball', 'Boxing']:
             if sub in grouped_events['Sports']:
                 grouped_events['Sports'][sub] = grouped_events['Sports'][sub][:1]
+
+    # Limit Google News items to 1 per sub-category
+    for cat in grouped_events:
+        for sub in grouped_events[cat]:
+            events_list = grouped_events[cat][sub]
+            # Check if this list contains Google News items
+            # (Assuming a list is either all Google News or not, or mixed. 
+            # If mixed, we filter only the Google News ones? 
+            # Simpler: If the first item is Google News, limit list to 1.
+            # Or iterate and count.
+            # User said: "filter 'google news' source to only show their top hit")
+            
+            # Separate Google News items from others (if any mixed)
+            gnews = [e for e in events_list if e.get('source') == 'Google News']
+            others = [e for e in events_list if e.get('source') != 'Google News']
+            
+            if gnews:
+                # Keep only top 1 Google News item
+                gnews = gnews[:1]
+                # Recombine (put GNews first or last? Date sorted usually. 
+                # If we split, we break sort.
+                # Better: Filter in place or slice)
                 
+                # If the whole list is Google News (typical for Dining/News categories)
+                if not others:
+                    grouped_events[cat][sub] = gnews
+                else:
+                    # Mixed source. Re-sort might be needed but main list was date sorted.
+                    # We just want to reduce the GNews count.
+                    # Let's keep others and add 1 GNews.
+                    new_list = others + gnews
+                    # Re-sort by date just in case
+                    # We need the sort key function again or lambda
+                    new_list.sort(key=lambda e: e.get('date_obj').timestamp() if e.get('date_obj') else 9999999999.0)
+                    grouped_events[cat][sub] = new_list
+
     # Reorder Sports sub-categories: Tennis, Padel, then others
     if 'Sports' in grouped_events:
         sports_dict = grouped_events['Sports']
