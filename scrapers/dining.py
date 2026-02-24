@@ -62,6 +62,32 @@ def fetch_dining_news():
                 if date_obj and (datetime.now() - date_obj).days > 60:
                     continue
 
+                # Filter generic London-wide articles - only keep Stratford-specific
+                combined_text = (title + " " + clean_desc).lower()
+                stratford_keywords = [
+                    'stratford', 'westfield', 'e20', 'e15',
+                    'olympic park', 'queen elizabeth',
+                    'here east', 'east village', 'east bank'
+                ]
+                generic_keywords = [
+                    'best restaurants in london',
+                    'hot new openings',
+                    'mapped:',
+                    'london restaurants',
+                    'openings coming soon',
+                    'check your area',
+                    'top restaurants',
+                    'restaurant guide',
+                    'where to eat in london',
+                    'best places to eat',
+                ]
+                # Skip if it matches generic patterns
+                if any(g in combined_text for g in generic_keywords):
+                    continue
+                # Skip if no Stratford-specific keyword is found
+                if not any(s in combined_text for s in stratford_keywords):
+                    continue
+
                 events.append({
                     'title': title,
                     'url': link,

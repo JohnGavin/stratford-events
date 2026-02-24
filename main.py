@@ -17,6 +17,8 @@ from scrapers.barbican import fetch_barbican_events
 from scrapers.lso import fetch_lso_events
 from scrapers.barts_north_wing import fetch_barts_north_wing_events
 from scrapers.st_brides import fetch_st_brides_events
+from scrapers.great_st_barts import fetch_great_st_barts_events
+from scrapers.st_stephen import fetch_st_stephen_events
 
 def main():
     print("Starting event collection...")
@@ -41,7 +43,9 @@ def main():
         (fetch_barbican_events, "Barbican"),
         (fetch_lso_events, "LSO"),
         (fetch_barts_north_wing_events, "Barts North Wing"),
-        (fetch_st_brides_events, "St Brides")
+        (fetch_st_brides_events, "St Brides"),
+        (fetch_great_st_barts_events, "Great St Barts"),
+        (fetch_st_stephen_events, "St Stephen Walbrook")
     ]
     
     for scraper_func, name in scrapers:
@@ -67,7 +71,7 @@ def main():
     forbidden = [
         'football', 'musical', 'dance', 'pantomime', 'panto', 'ballet', 'opera',
         'women', 'woman', 'ladies', 'kid', 'child', 'junior', 'boy', 'girl', 'family',
-        'netball', 'disruption', 'closure', 'notice', 'announcement', 'road close'
+        'netball', 'road close'
     ]
     
     # Use timezone-aware UTC now for comparison if possible, or naive if dates are naive
@@ -94,7 +98,7 @@ def main():
             continue
         
         # Recategorize Free events from specific sources
-        if e.get('source') in ['Barbican', 'Guildhall School']:
+        if e.get('source') in ['Barbican', 'Guildhall School', 'Great St Barts', 'St Stephen Walbrook']:
             if e.get('price') == 'Free':
                 e['category'] = 'Lunchtime Concerts / Free Events'
 
