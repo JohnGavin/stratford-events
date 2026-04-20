@@ -23,7 +23,9 @@ def send_email():
 
     # Create message
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = f"Stratford Events Weekly Report - {os.environ.get('GITHUB_RUN_ID', 'Manual')}"
+    from datetime import datetime
+    week_of = datetime.now().strftime('%d %b %Y')
+    msg['Subject'] = f"Stratford Events Weekly Report - w/c {week_of}"
     msg['From'] = f"Stratford Events Bot <{sender}>"
     msg['To'] = recipient
     msg['Date'] = formatdate(localtime=True)
