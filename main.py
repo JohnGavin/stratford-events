@@ -10,6 +10,7 @@ from scrapers.tennis import fetch_tennis_events
 from scrapers.va_east import fetch_va_events
 from scrapers.sadlers import fetch_sadlers_events
 from scrapers.gsmd import fetch_gsmd_events
+from scrapers.tfl_strikes import fetch_tfl_strikes
 from scrapers.alerts import fetch_google_alerts
 from scrapers.dining import fetch_dining_news
 from scrapers.aquatics import fetch_aquatics_events
@@ -28,6 +29,7 @@ def main():
     # Fetch from all sources
     # (Error handling wrapped in individual calls mostly, but good to keep safe here)
     scrapers = [
+        (fetch_tfl_strikes, "TfL Strikes"),  # FIRST — appears at top of report
         (fetch_qeop_events, "QEOP"),
         (fetch_ucl_events, "UCL"),
         (fetch_copper_box_events, "Sports"),
@@ -121,7 +123,7 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['Dining & Offers', 'Lunchtime Concerts / Free Events', 'STEM / Factual', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other', 'Sports']
+    cat_order = ['⚠️ Tube Strikes', 'Dining & Offers', 'Lunchtime Concerts / Free Events', 'STEM / Factual', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other', 'Sports']
     
     for e in filtered_events:
         cat = e.get('category', 'Other')
