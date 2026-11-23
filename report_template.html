@@ -33,8 +33,11 @@
                         <div class="event">
                             <div class="title"><a href="{{ event.url }}">{{ event.title }}</a></div>
                             <div class="meta">
-                                {{ event.date_str }} | {{ event.location }}
-                                {% if event.price %}
+                                {{ event.date_str }}
+                                {% if event.location %}
+                                    | {{ event.location }}
+                                {% endif %}
+                                {% if event.price and event.price != '-' %}
                                     | <span class="price">{{ event.price }}</span>
                                 {% endif %}
                             </div>

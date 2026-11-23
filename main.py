@@ -1,6 +1,7 @@
 import os
 import datetime
 from jinja2 import Environment, FileSystemLoader
+from utils.common import apply_date_window
 from scrapers.qeop import fetch_qeop_events
 from scrapers.ucl import fetch_ucl_events
 from scrapers.sports import fetch_copper_box_events
@@ -61,13 +62,18 @@ def main():
         except Exception as e:
             print(f"Error fetching {name}: {e}")
 
+    # Shared date window (issue #8): untitled rows, past rows, rows beyond the
+    # horizon and stale news are dropped; every kept row gets one date format.
+    window = apply_date_window(all_events)
+    print(window.summary())
+
     # Deduplicate and Clean
     unique_events = {}
-    for e in all_events:
+    for e in window.kept:
         key = e['title'].strip().lower()
         if key not in unique_events:
             unique_events[key] = e
-            
+
     # Final Filter (Global)
     filtered_events = []
     forbidden = [
@@ -76,29 +82,11 @@ def main():
         'netball', 'road close'
     ]
     
-    # Use timezone-aware UTC now for comparison if possible, or naive if dates are naive
-    # Safest is to handle both.
-    now = datetime.datetime.now().astimezone()
-    
     for e in unique_events.values():
         text = (e['title'] + " " + e.get('description', '')).lower()
         if any(word in text for word in forbidden):
             continue
-        
-        # Date Filter: STRICT - Must have date_obj
-        if not e.get('date_obj'):
-            # Drop events without a valid parsed date
-            continue
-            
-        dt = e['date_obj']
-        if dt.tzinfo is None:
-            dt = dt.astimezone()
-            
-        # Allow recent news/offers even if in the past
-        is_news = e.get('category') in ['News & Alerts', 'Dining & Offers']
-        if dt < now and not is_news:
-            continue
-        
+
         # Recategorize Free events from specific sources
         if e.get('source') in ['Barbican', 'Guildhall School', 'Great St Barts', 'St Stephen Walbrook']:
             if e.get('price') == 'Free':
