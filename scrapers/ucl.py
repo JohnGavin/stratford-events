@@ -2,14 +2,29 @@ import requests
 import json
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
+from params import (
+    CATEGORY_STEM,
+    DATE_SEE_WEBSITE,
+    DISPLAY_DATE_FORMAT,
+    DISPLAY_TIME_SUFFIX_FORMAT,
+    SOURCE_UCL,
+    SUB_GENERAL,
+    UCL_EVENTS_URL,
+    UCL_FORBIDDEN_KEYWORDS,
+    UCL_PRICE,
+    UCL_PUBLIC_AUDIENCE_KEYWORDS,
+    UCL_RESTRICTED_AUDIENCE_KEYWORDS,
+    UCL_SUBCATEGORY_RULES,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_ucl_events():
     # Funnelback API for UCL East events
     # We can try to filter by audience in the query if possible, but easier to post-filter
-    url = "https://cms-feed.ucl.ac.uk/s/search.json?collection=drupal-meta-events&meta_UclOrgUnit=%22UCL+East%22"
+    url = UCL_EVENTS_URL
     
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -29,37 +44,35 @@ def fetch_ucl_events():
         # 1. Public Filter
         # Check 'UclEventAudience'
         audience = meta.get('UclEventAudience', '').lower()
-        if 'public' not in audience and 'everyone' not in audience:
+        if not any(k in audience for k in UCL_PUBLIC_AUDIENCE_KEYWORDS):
             # Some events might not strictly tag 'public' but are. 
             # If strictly 'students only' or 'staff only', exclude.
-            if 'staff' in audience or 'student' in audience:
+            if any(k in audience for k in UCL_RESTRICTED_AUDIENCE_KEYWORDS):
                 continue
 
         title = res.get('title', '')
         summary = res.get('summary', '')
         
         # Filter out Dance/Musicals
-        if any(word in title.lower() or word in summary.lower() for word in ['dance', 'musical', 'ballet', 'opera']):
+        if any(word in title.lower() or word in summary.lower() for word in UCL_FORBIDDEN_KEYWORDS):
             continue
             
         # 2. Sub-categorization
-        sub_cat = 'General'
+        sub_cat = SUB_GENERAL
         t_low = title.lower()
-        if 'cinema' in t_low or 'screening' in t_low or 'film' in t_low:
-            sub_cat = 'Cinema'
-        elif 'exhibition' in t_low or 'gallery' in t_low:
-            sub_cat = 'Exhibition'
-        elif 'lecture' in t_low or 'talk' in t_low or 'conversation' in t_low:
-            sub_cat = 'Lecture/Talk'
+        for rule_sub_cat, rule_keywords in UCL_SUBCATEGORY_RULES:
+            if any(k in t_low for k in rule_keywords):
+                sub_cat = rule_sub_cat
+                break
             
         # 3. Date Parsing
         date_raw = meta.get('UclEventStartDate', '')
         date_obj = None
-        date_str = 'See website'
+        date_str = DATE_SEE_WEBSITE
         if date_raw:
             try:
                 date_obj = datetime.fromisoformat(date_raw)
-                date_str = date_obj.strftime("%a, %d %b %Y @ %H:%M")
+                date_str = date_obj.strftime(DISPLAY_DATE_FORMAT + DISPLAY_TIME_SUFFIX_FORMAT)
             except ValueError:
                 date_str = date_raw
 
@@ -67,7 +80,7 @@ def fetch_ucl_events():
         # UCL API often puts price in a specific field or text. 
         # Using a default 'Free/Check' if not found. 
         # Most public UCL events are free.
-        price_str = "Free (usually)"
+        price_str = UCL_PRICE
         
         event = {
             'title': title,
@@ -75,11 +88,11 @@ def fetch_ucl_events():
             'description': summary, # Funnelback summary is usually a good snippet
             'date_str': date_str,
             'date_obj': date_obj,
-            'location': meta.get('UclEventLocation', 'UCL East'),
-            'category': 'STEM / Factual',
+            'location': meta.get('UclEventLocation', SOURCE_UCL),
+            'category': CATEGORY_STEM,
             'sub_category': sub_cat,
             'price': price_str,
-            'source': 'UCL East'
+            'source': SOURCE_UCL
         }
         events.append(event)
         

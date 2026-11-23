@@ -19,8 +19,8 @@
     </style>
 </head>
 <body>
-    <h1>Stratford Events Weekly Report</h1>
-    <p>Your curated guide to upcoming STEM, Sports, and Culture in Stratford (E15/E20).</p>
+    <h1>{{ report_title }}</h1>
+    <p>{{ report_tagline }}</p>
 
     {% for category in category_order %}
         {% if category in grouped_events and grouped_events[category] %}

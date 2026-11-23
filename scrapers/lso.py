@@ -3,25 +3,41 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime, timedelta
 from utils.common import parse_event_date
+from params import (
+    CATEGORY_FREE_CONCERTS,
+    DATE_SEE_WEBSITE,
+    DESCRIPTION_MAX_CHARS,
+    HTML_PARSER,
+    HTTP_TIMEOUT_SECONDS,
+    LSO_BASE_URL,
+    LSO_CATEGORY_MAX_CHARS,
+    LSO_DESCRIPTION,
+    LSO_EVENTS_URL,
+    LSO_LOCATION,
+    PRICE_FREE,
+    SOURCE_LSO,
+    TIME_12H_FORMAT,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_lso_events():
     """
     Fetches LSO Free Friday Lunchtime Concerts with specific details
     (title, date, time, description, direct link).
     """
-    url = "https://www.lso.co.uk/whats-on/?category=free-friday-lunchtime-concerts"
+    url = LSO_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=15)
+        response = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT_SECONDS)
         response.raise_for_status()
     except Exception as e:
         print(f"Error fetching LSO events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
 
     # Find all event links - LSO uses <a> blocks containing h3, p elements
@@ -47,7 +63,7 @@ def fetch_lso_events():
         if link_tag and link_tag.get('href'):
             href = link_tag['href']
             if href.startswith('/'):
-                event_url = f"https://www.lso.co.uk{href}"
+                event_url = f"{LSO_BASE_URL}{href}"
             elif href.startswith('http'):
                 event_url = href
 
@@ -66,7 +82,7 @@ def fetch_lso_events():
 
         # Extract all paragraph text to find date/time and description
         paragraphs = item.find_all('p')
-        date_str = "See website"
+        date_str = DATE_SEE_WEBSITE
         date_obj = None
         description_parts = []
         category_text = ""
@@ -96,12 +112,12 @@ def fetch_lso_events():
                     if date_obj and time_match:
                         time_part = time_match.group(1).replace('.', ':')
                         try:
-                            t = datetime.strptime(time_part.strip(), "%I:%M%p")
+                            t = datetime.strptime(time_part.strip(), TIME_12H_FORMAT)
                             date_obj = date_obj.replace(hour=t.hour, minute=t.minute)
                         except ValueError:
                             pass
 
-            elif len(p_text) < 30 and not description_parts:
+            elif len(p_text) < LSO_CATEGORY_MAX_CHARS and not description_parts:
                 # Short text before date is likely category (e.g., "LSO Discovery")
                 category_text = p_text
             else:
@@ -115,9 +131,9 @@ def fetch_lso_events():
         if description_parts:
             desc += " ".join(description_parts)
         if not desc:
-            desc = "Free Friday Lunchtime Concert at LSO St Luke's"
-        if len(desc) > 300:
-            desc = desc[:300] + "..."
+            desc = LSO_DESCRIPTION
+        if len(desc) > DESCRIPTION_MAX_CHARS:
+            desc = desc[:DESCRIPTION_MAX_CHARS] + "..."
 
         events.append({
             'title': title,
@@ -125,11 +141,11 @@ def fetch_lso_events():
             'description': desc,
             'date_str': date_str,
             'date_obj': date_obj,
-            'location': "LSO St Luke's",
-            'category': 'Lunchtime Concerts / Free Events',
-            'sub_category': "LSO St Luke's",
-            'price': "Free",
-            'source': 'LSO'
+            'location': LSO_LOCATION,
+            'category': CATEGORY_FREE_CONCERTS,
+            'sub_category': LSO_LOCATION,
+            'price': PRICE_FREE,
+            'source': SOURCE_LSO
         })
 
     return events

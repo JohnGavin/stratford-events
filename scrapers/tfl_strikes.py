@@ -8,12 +8,38 @@ Returns events with category='⚠️ Tube Strikes' to appear first in report.
 """
 import requests
 from datetime import datetime, timedelta
+from params import (
+    CATEGORY_TUBE_STRIKES,
+    HTML_PARSER,
+    HTTP_STATUS_OK,
+    HTTP_TIMEOUT_SECONDS,
+    PRICE_NONE,
+    SHORT_DATE_FORMAT,
+    SOURCE_TFL,
+    SUB_TFL_INDUSTRIAL_ACTION,
+    SUB_TFL_STATUS,
+    TFL_API_STRIKE_KEYWORDS,
+    TFL_API_TITLE_TEMPLATE,
+    TFL_DATE_TBC,
+    TFL_DEFAULT_DESCRIPTION,
+    TFL_DEFAULT_LINES,
+    TFL_DESCRIPTION_MAX_CHARS,
+    TFL_DISRUPTION_URL,
+    TFL_HEADING_DATE_PATTERNS,
+    TFL_LOOKAHEAD_DAYS,
+    TFL_NO_STRIKES_DATE_TEMPLATE,
+    TFL_NO_STRIKES_DESCRIPTION,
+    TFL_NO_STRIKES_TITLE,
+    TFL_NO_YEAR_PLACEHOLDER,
+    TFL_PAGE_DEFAULT_DESCRIPTION,
+    TFL_PAGE_STRIKE_KEYWORDS,
+    TFL_PAGE_TITLE_TEMPLATE,
+    TFL_RANGE_DATE_FORMAT,
+    TFL_STRIKES_URL,
+    TFL_USER_AGENT,
+)
 
-TFL_API_BASE = "https://api.tfl.gov.uk"
-TFL_STRIKES_URL = "https://tfl.gov.uk/campaign/strikes"
-HEADERS = {
-    "User-Agent": "StratfordEventsBot/1.0 (weekly personal report)"
-}
+HEADERS = {"User-Agent": TFL_USER_AGENT}
 
 
 def fetch_tfl_strikes():
@@ -36,15 +62,15 @@ def fetch_tfl_strikes():
     # If no strikes found, return a "no strikes" placeholder
     if not events:
         events = [{
-            'title': 'No tube strikes planned',
+            'title': TFL_NO_STRIKES_TITLE,
             'url': TFL_STRIKES_URL,
-            'description': 'No industrial action affecting London Underground is currently planned for the coming week.',
-            'date_str': f"Week of {datetime.now().strftime('%d %b %Y')}",
+            'description': TFL_NO_STRIKES_DESCRIPTION,
+            'date_str': TFL_NO_STRIKES_DATE_TEMPLATE.format(date=datetime.now().strftime(SHORT_DATE_FORMAT)),
             'date_obj': datetime.now(),
-            'category': '⚠️ Tube Strikes',
-            'sub_category': 'Status',
-            'price': '-',
-            'source': 'TfL'
+            'category': CATEGORY_TUBE_STRIKES,
+            'sub_category': SUB_TFL_STATUS,
+            'price': PRICE_NONE,
+            'source': SOURCE_TFL
         }]
 
     return events
@@ -54,14 +80,14 @@ def _fetch_via_api():
     """Use TfL Unified API to find planned disruptions (strikes)."""
     events = []
     now = datetime.now()
-    week_ahead = now + timedelta(days=7)
+    week_ahead = now + timedelta(days=TFL_LOOKAHEAD_DAYS)
 
     # Check for planned closures/disruptions on tube lines
     # The /Line/Mode/tube/Disruption endpoint shows current + future disruptions
-    url = f"{TFL_API_BASE}/Line/Mode/tube/Disruption"
-    resp = requests.get(url, headers=HEADERS, timeout=15)
+    url = TFL_DISRUPTION_URL
+    resp = requests.get(url, headers=HEADERS, timeout=HTTP_TIMEOUT_SECONDS)
 
-    if resp.status_code != 200:
+    if resp.status_code != HTTP_STATUS_OK:
         raise RuntimeError(f"TfL API returned {resp.status_code}")
 
     disruptions = resp.json()
@@ -71,9 +97,7 @@ def _fetch_via_api():
         desc = (d.get('description', '') + ' ' + d.get('additionalInfo', '')).lower()
         category_desc = d.get('categoryDescription', '').lower()
 
-        is_strike = any(kw in desc or kw in category_desc for kw in [
-            'strike', 'industrial action', 'walkout', 'rmt', 'aslef', 'tssa'
-        ])
+        is_strike = any(kw in desc or kw in category_desc for kw in TFL_API_STRIKE_KEYWORDS)
 
         if not is_strike:
             continue
@@ -91,22 +115,22 @@ def _fetch_via_api():
         # Affected lines
         affected = d.get('affectedRoutes', [])
         lines = [r.get('name', '') for r in affected] if affected else []
-        lines_str = ', '.join(lines) if lines else 'Multiple lines'
+        lines_str = ', '.join(lines) if lines else TFL_DEFAULT_LINES
 
-        date_str = from_date.strftime('%a %d %b') if from_date else 'TBC'
+        date_str = from_date.strftime(TFL_RANGE_DATE_FORMAT) if from_date else TFL_DATE_TBC
         if to_date and to_date != from_date:
-            date_str += f" – {to_date.strftime('%a %d %b')}"
+            date_str += f" – {to_date.strftime(TFL_RANGE_DATE_FORMAT)}"
 
         events.append({
-            'title': f"🚇 Tube Strike: {lines_str}",
+            'title': TFL_API_TITLE_TEMPLATE.format(lines=lines_str),
             'url': TFL_STRIKES_URL,
-            'description': d.get('description', 'Industrial action planned.'),
+            'description': d.get('description', TFL_DEFAULT_DESCRIPTION),
             'date_str': date_str,
             'date_obj': from_date or now,
-            'category': '⚠️ Tube Strikes',
-            'sub_category': 'Industrial Action',
-            'price': '-',
-            'source': 'TfL'
+            'category': CATEGORY_TUBE_STRIKES,
+            'sub_category': SUB_TFL_INDUSTRIAL_ACTION,
+            'price': PRICE_NONE,
+            'source': SOURCE_TFL
         })
 
     return events
@@ -117,12 +141,12 @@ def _fetch_via_scrape():
     from bs4 import BeautifulSoup
 
     events = []
-    resp = requests.get(TFL_STRIKES_URL, headers=HEADERS, timeout=15)
+    resp = requests.get(TFL_STRIKES_URL, headers=HEADERS, timeout=HTTP_TIMEOUT_SECONDS)
 
-    if resp.status_code != 200:
+    if resp.status_code != HTTP_STATUS_OK:
         raise RuntimeError(f"TfL strikes page returned {resp.status_code}")
 
-    soup = BeautifulSoup(resp.text, 'html.parser')
+    soup = BeautifulSoup(resp.text, HTML_PARSER)
 
     # Look for strike content blocks
     # The page structure varies but typically has date/description blocks
@@ -147,17 +171,17 @@ def _fetch_via_scrape():
 
         # Only include if it looks like strike info
         combined = (text + ' ' + desc).lower()
-        if any(kw in combined for kw in ['strike', 'industrial action', 'walkout', 'disruption']):
+        if any(kw in combined for kw in TFL_PAGE_STRIKE_KEYWORDS):
             events.append({
-                'title': f"🚇 {text}",
+                'title': TFL_PAGE_TITLE_TEMPLATE.format(text=text),
                 'url': TFL_STRIKES_URL,
-                'description': desc[:300] if desc else 'See TfL website for details.',
+                'description': desc[:TFL_DESCRIPTION_MAX_CHARS] if desc else TFL_PAGE_DEFAULT_DESCRIPTION,
                 'date_str': text,
                 'date_obj': date_obj or datetime.now(),
-                'category': '⚠️ Tube Strikes',
-                'sub_category': 'Industrial Action',
-                'price': '-',
-                'source': 'TfL'
+                'category': CATEGORY_TUBE_STRIKES,
+                'sub_category': SUB_TFL_INDUSTRIAL_ACTION,
+                'price': PRICE_NONE,
+                'source': SOURCE_TFL
             })
 
     return events
@@ -177,17 +201,13 @@ def _try_parse_date(text):
     """Try common date formats in heading text."""
     import re
     # Try "DD Month YYYY" or "DD Month"
-    patterns = [
-        ("%d %B %Y", r'\d{1,2} \w+ \d{4}'),
-        ("%d %B", r'\d{1,2} \w+'),
-        ("%A %d %B", r'\w+ \d{1,2} \w+'),
-    ]
+    patterns = TFL_HEADING_DATE_PATTERNS
     for fmt, regex in patterns:
         match = re.search(regex, text)
         if match:
             try:
                 d = datetime.strptime(match.group(), fmt)
-                if d.year == 1900:  # no year in format
+                if d.year == TFL_NO_YEAR_PLACEHOLDER:  # no year in format
                     d = d.replace(year=datetime.now().year)
                 return d
             except ValueError:

@@ -3,11 +3,33 @@ from bs4 import BeautifulSoup
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
 import re
+from params import (
+    CATEGORY_EAST_VILLAGE,
+    CATEGORY_QEOP_GENERAL,
+    CATEGORY_RIVERSIDE_EAST,
+    DATE_SEE_WEBSITE,
+    DESCRIPTION_MAX_CHARS,
+    HTML_PARSER,
+    KEYWORD_MARKET,
+    QEOP_BASE_URL,
+    QEOP_DEFAULT_SUBCATEGORY,
+    QEOP_EAST_VILLAGE_KEYWORD,
+    QEOP_EVENTS_URL,
+    QEOP_MIN_DESCRIPTION_CHARS,
+    QEOP_PRICE_DEFAULT,
+    QEOP_RIVERSIDE_KEYWORD,
+    QEOP_TOUR_KEYWORDS,
+    SOURCE_QEOP,
+    SUB_QEOP_MARKETS,
+    SUB_QEOP_RIVERSIDE,
+    SUB_QEOP_TOURS,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_qeop_events():
-    url = "https://www.queenelizabetholympicpark.co.uk/whats-on"
+    url = QEOP_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -17,7 +39,7 @@ def fetch_qeop_events():
         print(f"Error fetching QEOP events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
 
     articles = soup.find_all('article', class_=re.compile(r'o-teaser'))
@@ -29,7 +51,7 @@ def fetch_qeop_events():
         
         link_tag = title_tag.find('a')
         if link_tag and link_tag.get('href'):
-            event_url = "https://www.queenelizabetholympicpark.co.uk" + link_tag.get('href')
+            event_url = QEOP_BASE_URL + link_tag.get('href')
         else:
             event_url = url
 
@@ -38,20 +60,20 @@ def fetch_qeop_events():
         description = summary_tag.get_text(strip=True) if summary_tag else ""
 
         date_tag = article.find('div', class_='o-teaser__date') or article.find('time')
-        date_raw = date_tag.get_text(strip=True) if date_tag else "See website"
+        date_raw = date_tag.get_text(strip=True) if date_tag else DATE_SEE_WEBSITE
         
         # Deep scrape for full text / date check
-        price_str = "Free (check details)"
+        price_str = QEOP_PRICE_DEFAULT
         try:
             res_d = requests.get(event_url, headers=headers)
-            soup_d = BeautifulSoup(res_d.text, 'html.parser')
+            soup_d = BeautifulSoup(res_d.text, HTML_PARSER)
             
             # Content
             # Usually in .o-wysiwyg or similar
             content_div = soup_d.find('div', class_=re.compile(r'wysiwyg'))
             if content_div:
                 full_text = content_div.get_text(strip=True)
-                if len(full_text) > 20: description = full_text[:300] + "..."
+                if len(full_text) > QEOP_MIN_DESCRIPTION_CHARS: description = full_text[:DESCRIPTION_MAX_CHARS] + "..."
             
             # Check price keywords
             body_text = soup_d.get_text().lower()
@@ -63,17 +85,17 @@ def fetch_qeop_events():
 
         date_obj = parse_event_date(date_raw)
         
-        sub_cat = 'General Park Event'
+        sub_cat = QEOP_DEFAULT_SUBCATEGORY
         t_low = title.lower()
-        if 'tour' in t_low or 'trail' in t_low: sub_cat = 'Tours & Trails'
-        elif 'market' in t_low: sub_cat = 'Markets'
+        if any(k in t_low for k in QEOP_TOUR_KEYWORDS): sub_cat = SUB_QEOP_TOURS
+        elif KEYWORD_MARKET in t_low: sub_cat = SUB_QEOP_MARKETS
         
-        cat = 'QEOP / General'
-        if 'riverside east' in t_low or 'riverside east' in description.lower():
-            cat = 'Riverside East'
-            sub_cat = 'Events'
-        elif 'east village' in t_low:
-            cat = 'East Village'
+        cat = CATEGORY_QEOP_GENERAL
+        if QEOP_RIVERSIDE_KEYWORD in t_low or QEOP_RIVERSIDE_KEYWORD in description.lower():
+            cat = CATEGORY_RIVERSIDE_EAST
+            sub_cat = SUB_QEOP_RIVERSIDE
+        elif QEOP_EAST_VILLAGE_KEYWORD in t_low:
+            cat = CATEGORY_EAST_VILLAGE
 
         events.append({
             'title': title,
@@ -84,7 +106,7 @@ def fetch_qeop_events():
             'category': cat,
             'sub_category': sub_cat,
             'price': price_str,
-            'source': 'Queen Elizabeth Olympic Park'
+            'source': SOURCE_QEOP
         })
 
     return events

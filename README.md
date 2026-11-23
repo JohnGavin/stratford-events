@@ -28,17 +28,18 @@ A Python-based automated bot that scrapes and aggregates upcoming events in Stra
 *   **Scrapers (`scrapers/`):** Modular Python scripts using `requests` and `BeautifulSoup`.
     *   `dining.py`: Fetches restaurant news and offers via Google News RSS.
     *   `aquatics.py`: Scrapes London Aquatics Centre events.
-    *   `barbican.py`: Scrapes Barbican Centre (next 14 days only).
+    *   `barbican.py`: Scrapes Barbican Centre (short lookahead only; see `params.py`).
     *   `lso.py`: Scrapes LSO Free Friday Lunchtime Concerts.
     *   `barts_north_wing.py`: Scrapes Barts North Wing public events.
     *   `st_brides.py`: Scrapes St Brides events.
     *   `ucl.py`: Fetches from UCL East Funnelback API (JSON).
     *   `sports.py`: Scrapes Copper Box Arena.
-    *   `gsmd.py`: Scrapes Guildhall School (East Bank only, next 14 days).
+    *   `gsmd.py`: Scrapes Guildhall School (East Bank only, short lookahead; see `params.py`).
     *   `theatre.py`: Scrapes Stratford East.
     *   `qeop.py`: Scrapes Queen Elizabeth Olympic Park.
     *   `here_east.py`: Scrapes Here East.
     *   `tennis.py`: Generates recurring/static tennis info.
+*   **Parameters (`params.py`):** the single home of every tunable (date window, limits, URLs, keyword filters, labels, formats, email settings). Change a value there and nowhere else; `tests/test_params_single_home.py` fails the build if a value is retyped in another `.py` file. Credentials and the recipient stay in environment variables / GitHub secrets.
 *   **Core Logic (`main.py`):**
     *   Orchestrates scrapers.
     *   Parses dates to `datetime` objects for sorting.

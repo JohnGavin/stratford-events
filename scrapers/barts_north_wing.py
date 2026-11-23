@@ -3,11 +3,22 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date
+from params import (
+    BARTS_DESCRIPTION,
+    BARTS_EVENTS_URL,
+    CATEGORY_STEM,
+    DATE_SEE_WEBSITE,
+    HTML_PARSER,
+    PRICE_CHECK_WEBSITE,
+    SOURCE_BARTS,
+    SUB_MUSEUM,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_barts_north_wing_events():
-    url = "https://bartsnorthwing.org.uk/whats-on/"
+    url = BARTS_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -17,7 +28,7 @@ def fetch_barts_north_wing_events():
         print(f"Error fetching Barts events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
     
     # Structure based on "What's On" usually articles
@@ -37,7 +48,7 @@ def fetch_barts_north_wing_events():
             
         # Date
         date_tag = item.find('time')
-        date_str = "See website"
+        date_str = DATE_SEE_WEBSITE
         date_obj = None
         if date_tag:
             date_raw = date_tag.get_text(strip=True)
@@ -54,13 +65,13 @@ def fetch_barts_north_wing_events():
         events.append({
             'title': title,
             'url': event_url,
-            'description': "Barts North Wing Event",
+            'description': BARTS_DESCRIPTION,
             'date_str': date_str,
             'date_obj': date_obj,
-            'category': 'STEM / Factual', # Or Culture
-            'sub_category': 'Museum / Exhibition',
-            'price': "Check website",
-            'source': 'Barts North Wing'
+            'category': CATEGORY_STEM, # Or Culture
+            'sub_category': SUB_MUSEUM,
+            'price': PRICE_CHECK_WEBSITE,
+            'source': SOURCE_BARTS
         })
         
     return events
