@@ -3,6 +3,26 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime, timedelta
 from utils.common import parse_event_date
+from params import (
+    CATEGORY_FREE_CONCERTS,
+    DATE_SEE_WEBSITE,
+    DESCRIPTION_MAX_CHARS,
+    HTML_PARSER,
+    HTTP_TIMEOUT_SECONDS,
+    PRICE_FREE,
+    SOURCE_ST_BRIDES,
+    ST_BRIDES_BASE_URL,
+    ST_BRIDES_DESCRIPTION,
+    ST_BRIDES_EVENTS_URL,
+    ST_BRIDES_EXCLUDE_PATTERN,
+    ST_BRIDES_LOCATION,
+    ST_BRIDES_MIN_TEXT_CHARS,
+    ST_BRIDES_MIN_TITLE_CHARS,
+    ST_BRIDES_MUSIC_PATTERN,
+    ST_BRIDES_USER_AGENT,
+    TIME_12H_FORMAT,
+    TIME_24H_FORMAT,
+)
 
 def fetch_st_brides_events():
     """
@@ -10,29 +30,29 @@ def fetch_st_brides_events():
     Returns specific event details (artist, programme, date/time).
     Excludes services (Morning Prayer, Evensong, Communion, etc).
     """
-    url = "https://www.stbrides.com/whats-on/"
+    url = ST_BRIDES_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Safari/605.1.15"
+        "User-Agent": ST_BRIDES_USER_AGENT
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=15)
+        response = requests.get(url, headers=headers, timeout=HTTP_TIMEOUT_SECONDS)
         response.raise_for_status()
     except Exception as e:
         print(f"Error fetching St Brides events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
 
     # Patterns to exclude (services, not concerts)
     exclude_patterns = re.compile(
-        r'morning prayer|evensong|communion|eucharist|space for silence|compline|vespers|matins|bible|lent course',
+        ST_BRIDES_EXCLUDE_PATTERN,
         re.IGNORECASE
     )
     # Patterns to include (musical events)
     music_patterns = re.compile(
-        r'recital|concert|piano|organ|choir|violin|cello|guitar|soprano|mezzo|tenor|baritone|bass|singers|ensemble|quartet|trio|harp|flute|oboe|clarinet|trumpet|stabat|cantorum|scholars',
+        ST_BRIDES_MUSIC_PATTERN,
         re.IGNORECASE
     )
 
@@ -62,7 +82,7 @@ def fetch_st_brides_events():
             continue
 
         title = title_tag.get_text(strip=True)
-        if not title or len(title) < 3:
+        if not title or len(title) < ST_BRIDES_MIN_TITLE_CHARS:
             continue
 
         # Skip excluded types
@@ -88,10 +108,10 @@ def fetch_st_brides_events():
             if href.startswith('http'):
                 event_url = href
             elif href.startswith('/'):
-                event_url = f"https://www.stbrides.com{href}"
+                event_url = f"{ST_BRIDES_BASE_URL}{href}"
 
         # Date and time
-        date_str = "See website"
+        date_str = DATE_SEE_WEBSITE
         date_obj = None
 
         # Look for <time> tag first
@@ -131,9 +151,9 @@ def fetch_st_brides_events():
                 time_str = time_match.group(1).replace('.', ':')
                 try:
                     if 'am' in time_str.lower() or 'pm' in time_str.lower():
-                        t = datetime.strptime(time_str.strip(), "%I:%M%p")
+                        t = datetime.strptime(time_str.strip(), TIME_12H_FORMAT)
                     else:
-                        t = datetime.strptime(time_str.strip(), "%H:%M")
+                        t = datetime.strptime(time_str.strip(), TIME_24H_FORMAT)
                     date_obj = date_obj.replace(hour=t.hour, minute=t.minute)
                 except ValueError:
                     pass
@@ -142,13 +162,13 @@ def fetch_st_brides_events():
         desc_parts = []
         for p in item.find_all(['p', 'span', 'div']):
             p_text = p.get_text(strip=True)
-            if p_text and len(p_text) > 5 and not exclude_patterns.search(p_text):
+            if p_text and len(p_text) > ST_BRIDES_MIN_TEXT_CHARS and not exclude_patterns.search(p_text):
                 # Skip if it's just the title repeated
                 if p_text.lower() != title.lower():
                     desc_parts.append(p_text)
-        description = " | ".join(dict.fromkeys(desc_parts))[:300] if desc_parts else title
+        description = " | ".join(dict.fromkeys(desc_parts))[:DESCRIPTION_MAX_CHARS] if desc_parts else title
         if not description or description == title:
-            description = f"Free lunchtime recital at St Bride's Church, Fleet Street"
+            description = ST_BRIDES_DESCRIPTION
 
         events.append({
             'title': title,
@@ -156,11 +176,11 @@ def fetch_st_brides_events():
             'description': description,
             'date_str': date_str,
             'date_obj': date_obj,
-            'location': "St Bride's Church, Fleet Street",
-            'category': 'Lunchtime Concerts / Free Events',
-            'sub_category': "St Bride's",
-            'price': "Free",
-            'source': "St Bride's"
+            'location': ST_BRIDES_LOCATION,
+            'category': CATEGORY_FREE_CONCERTS,
+            'sub_category': SOURCE_ST_BRIDES,
+            'price': PRICE_FREE,
+            'source': SOURCE_ST_BRIDES
         })
 
     return events

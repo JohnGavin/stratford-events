@@ -3,11 +3,25 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
+from params import (
+    CATEGORY_THEATRE,
+    DESCRIPTION_MAX_CHARS,
+    DISPLAY_DATE_FORMAT,
+    HTML_PARSER,
+    PRICE_CHECK_WEBSITE,
+    SOURCE_STRATFORD_EAST,
+    SUB_THEATRE,
+    THEATRE_BASE_URL,
+    THEATRE_DATE_FORMAT,
+    THEATRE_EVENTS_URL,
+    THEATRE_FORBIDDEN_KEYWORDS,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_stratford_east_events():
-    url = "https://www.stratfordeast.com/whats-on"
+    url = THEATRE_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -17,7 +31,7 @@ def fetch_stratford_east_events():
         print(f"Error fetching Stratford East events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
     
     titles = soup.find_all('h2')
@@ -28,7 +42,7 @@ def fetch_stratford_east_events():
             continue
             
         title = link_tag.get_text(strip=True)
-        event_url = "https://www.stratfordeast.com" + link_tag.get('href')
+        event_url = THEATRE_BASE_URL + link_tag.get('href')
         
         # Shallow data
         container = title_tag.parent.parent
@@ -38,18 +52,18 @@ def fetch_stratford_east_events():
         # Deep Scrape
         description = ""
         duration = ""
-        price_str = "Check website"
+        price_str = PRICE_CHECK_WEBSITE
         times = []
         
         try:
             res_detail = requests.get(event_url, headers=headers)
-            soup_detail = BeautifulSoup(res_detail.text, 'html.parser')
+            soup_detail = BeautifulSoup(res_detail.text, HTML_PARSER)
             
             # Full Description
             # Usually in a 'production-content' or similar div
             content_div = soup_detail.find('div', class_='production-content')
             if content_div:
-                description = content_div.get_text(strip=True)[:300] + "..." # Limit length but keep enough
+                description = content_div.get_text(strip=True)[:DESCRIPTION_MAX_CHARS] + "..." # Limit length but keep enough
             else:
                 # Fallback to meta description
                 meta = soup_detail.find('meta', attrs={'name': 'description'})
@@ -76,12 +90,12 @@ def fetch_stratford_east_events():
             # Usually "SAT 31 JAN 2026 - ..."
             first_date = date_raw.split('-')[0].strip()
             try:
-                date_obj = datetime.strptime(first_date, "%a %d %b %Y")
-                date_str = date_obj.strftime("%a, %d %b %Y")
+                date_obj = datetime.strptime(first_date, THEATRE_DATE_FORMAT)
+                date_str = date_obj.strftime(DISPLAY_DATE_FORMAT)
             except:
                 pass
         
-        forbidden = ['musical', 'dance', 'pantomime', 'panto', 'concert', 'music of']
+        forbidden = THEATRE_FORBIDDEN_KEYWORDS
         if any(word in title.lower() or word in description.lower() for word in forbidden):
             continue
 
@@ -91,10 +105,10 @@ def fetch_stratford_east_events():
             'description': description,
             'date_str': date_str,
             'date_obj': date_obj,
-            'category': 'Theatre',
-            'sub_category': 'Stratford East',
+            'category': CATEGORY_THEATRE,
+            'sub_category': SUB_THEATRE,
             'price': price_str,
-            'source': 'Stratford East'
+            'source': SOURCE_STRATFORD_EAST
         })
         
     return events

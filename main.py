@@ -21,6 +21,28 @@ from scrapers.barts_north_wing import fetch_barts_north_wing_events
 from scrapers.st_brides import fetch_st_brides_events
 from scrapers.great_st_barts import fetch_great_st_barts_events
 from scrapers.st_stephen import fetch_st_stephen_events
+from params import (
+    CATEGORY_FREE_CONCERTS,
+    CATEGORY_ORDER,
+    CATEGORY_OTHER,
+    CATEGORY_SPORTS,
+    FREE_RECATEGORIZE_SOURCES,
+    GLOBAL_FORBIDDEN_KEYWORDS,
+    GOOGLE_NEWS_ITEMS_PER_SUBCATEGORY,
+    PRICE_FREE,
+    REPORT_OUTPUT_FILE,
+    REPORT_TAGLINE,
+    REPORT_TEMPLATE_FILE,
+    REPORT_TITLE,
+    REPORT_TODAY_FORMAT,
+    SCRAPER_LABELS,
+    SOURCE_GOOGLE_NEWS,
+    SPORTS_SINGLE_ITEM_LIMIT,
+    SPORTS_SINGLE_ITEM_SUBCATEGORIES,
+    SPORTS_SUBCATEGORY_PRIORITY,
+    SUB_GENERAL,
+    UNDATED_SORT_TIMESTAMP,
+)
 
 def main():
     print("Starting event collection...")
@@ -30,25 +52,25 @@ def main():
     # Fetch from all sources
     # (Error handling wrapped in individual calls mostly, but good to keep safe here)
     scrapers = [
-        (fetch_tfl_strikes, "TfL Strikes"),  # FIRST — appears at top of report
-        (fetch_qeop_events, "QEOP"),
-        (fetch_ucl_events, "UCL"),
-        (fetch_copper_box_events, "Sports"),
-        (fetch_stratford_east_events, "Theatre"),
-        (fetch_here_east_events, "Here East"),
-        (fetch_tennis_events, "Tennis"),
-        (fetch_va_events, "V&A East"),
-        (fetch_sadlers_events, "Sadler's Wells"),
-        (fetch_gsmd_events, "Guildhall School"),
-        (fetch_google_alerts, "News"),
-        (fetch_dining_news, "Dining & Offers"),
-        (fetch_aquatics_events, "Aquatics"),
-        (fetch_barbican_events, "Barbican"),
-        (fetch_lso_events, "LSO"),
-        (fetch_barts_north_wing_events, "Barts North Wing"),
-        (fetch_st_brides_events, "St Brides"),
-        (fetch_great_st_barts_events, "Great St Barts"),
-        (fetch_st_stephen_events, "St Stephen Walbrook")
+        (fetch_tfl_strikes, SCRAPER_LABELS['tfl_strikes']),  # FIRST — appears at top of report
+        (fetch_qeop_events, SCRAPER_LABELS['qeop']),
+        (fetch_ucl_events, SCRAPER_LABELS['ucl']),
+        (fetch_copper_box_events, SCRAPER_LABELS['sports']),
+        (fetch_stratford_east_events, SCRAPER_LABELS['theatre']),
+        (fetch_here_east_events, SCRAPER_LABELS['here_east']),
+        (fetch_tennis_events, SCRAPER_LABELS['lea_valley']),
+        (fetch_va_events, SCRAPER_LABELS['va_east']),
+        (fetch_sadlers_events, SCRAPER_LABELS['sadlers']),
+        (fetch_gsmd_events, SCRAPER_LABELS['gsmd']),
+        (fetch_google_alerts, SCRAPER_LABELS['news']),
+        (fetch_dining_news, SCRAPER_LABELS['dining']),
+        (fetch_aquatics_events, SCRAPER_LABELS['aquatics']),
+        (fetch_barbican_events, SCRAPER_LABELS['barbican']),
+        (fetch_lso_events, SCRAPER_LABELS['lso']),
+        (fetch_barts_north_wing_events, SCRAPER_LABELS['barts_north_wing']),
+        (fetch_st_brides_events, SCRAPER_LABELS['st_brides']),
+        (fetch_great_st_barts_events, SCRAPER_LABELS['great_st_barts']),
+        (fetch_st_stephen_events, SCRAPER_LABELS['st_stephen'])
     ]
     
     for scraper_func, name in scrapers:
@@ -76,11 +98,7 @@ def main():
 
     # Final Filter (Global)
     filtered_events = []
-    forbidden = [
-        'football', 'musical', 'dance', 'pantomime', 'panto', 'ballet', 'opera',
-        'women', 'woman', 'ladies', 'kid', 'child', 'junior', 'boy', 'girl', 'family',
-        'netball', 'road close'
-    ]
+    forbidden = GLOBAL_FORBIDDEN_KEYWORDS
     
     for e in unique_events.values():
         text = (e['title'] + " " + e.get('description', '')).lower()
@@ -88,13 +106,13 @@ def main():
             continue
 
         # Recategorize Free events from specific sources
-        if e.get('source') in ['Barbican', 'Guildhall School', 'Great St Barts', 'St Stephen Walbrook']:
-            if e.get('price') == 'Free':
-                e['category'] = 'Lunchtime Concerts / Free Events'
+        if e.get('source') in FREE_RECATEGORIZE_SOURCES:
+            if e.get('price') == PRICE_FREE:
+                e['category'] = CATEGORY_FREE_CONCERTS
 
         # Ensure sub_category exists
         if 'sub_category' not in e:
-            e['sub_category'] = 'General'
+            e['sub_category'] = SUB_GENERAL
             
         filtered_events.append(e)
 
@@ -102,7 +120,7 @@ def main():
     def sort_key(e):
         d = e.get('date_obj')
         if d: return d.timestamp()
-        return 9999999999.0 # Far future for undated
+        return UNDATED_SORT_TIMESTAMP # Far future for undated
         
     filtered_events.sort(key=sort_key)
 
@@ -111,11 +129,11 @@ def main():
     grouped_events = {}
     
     # Define preferred category order
-    cat_order = ['⚠️ Tube Strikes', 'Dining & Offers', 'Lunchtime Concerts / Free Events', 'STEM / Factual', 'Theatre', 'Tennis', 'Riverside East', 'East Village', 'Westfield / Shopping', 'Community', 'News & Alerts', 'Other', 'Sports']
+    cat_order = CATEGORY_ORDER
     
     for e in filtered_events:
-        cat = e.get('category', 'Other')
-        sub = e.get('sub_category', 'General')
+        cat = e.get('category', CATEGORY_OTHER)
+        sub = e.get('sub_category', SUB_GENERAL)
         
         if cat not in grouped_events:
             grouped_events[cat] = {}
@@ -126,10 +144,10 @@ def main():
 
     # Post-Processing: Limit specific sub-categories
     # Basketball and Boxing: Show only the next upcoming event
-    if 'Sports' in grouped_events:
-        for sub in ['Basketball', 'Boxing']:
-            if sub in grouped_events['Sports']:
-                grouped_events['Sports'][sub] = grouped_events['Sports'][sub][:1]
+    if CATEGORY_SPORTS in grouped_events:
+        for sub in SPORTS_SINGLE_ITEM_SUBCATEGORIES:
+            if sub in grouped_events[CATEGORY_SPORTS]:
+                grouped_events[CATEGORY_SPORTS][sub] = grouped_events[CATEGORY_SPORTS][sub][:SPORTS_SINGLE_ITEM_LIMIT]
 
     # Limit Google News items to 1 per sub-category
     for cat in grouped_events:
@@ -143,12 +161,12 @@ def main():
             # User said: "filter 'google news' source to only show their top hit")
             
             # Separate Google News items from others (if any mixed)
-            gnews = [e for e in events_list if e.get('source') == 'Google News']
-            others = [e for e in events_list if e.get('source') != 'Google News']
+            gnews = [e for e in events_list if e.get('source') == SOURCE_GOOGLE_NEWS]
+            others = [e for e in events_list if e.get('source') != SOURCE_GOOGLE_NEWS]
             
             if gnews:
                 # Keep only top 1 Google News item
-                gnews = gnews[:1]
+                gnews = gnews[:GOOGLE_NEWS_ITEMS_PER_SUBCATEGORY]
                 # Recombine (put GNews first or last? Date sorted usually. 
                 # If we split, we break sort.
                 # Better: Filter in place or slice)
@@ -163,35 +181,37 @@ def main():
                     new_list = others + gnews
                     # Re-sort by date just in case
                     # We need the sort key function again or lambda
-                    new_list.sort(key=lambda e: e.get('date_obj').timestamp() if e.get('date_obj') else 9999999999.0)
+                    new_list.sort(key=lambda e: e.get('date_obj').timestamp() if e.get('date_obj') else UNDATED_SORT_TIMESTAMP)
                     grouped_events[cat][sub] = new_list
 
     # Reorder Sports sub-categories: Tennis, Padel, then others
-    if 'Sports' in grouped_events:
-        sports_dict = grouped_events['Sports']
+    if CATEGORY_SPORTS in grouped_events:
+        sports_dict = grouped_events[CATEGORY_SPORTS]
         ordered_sports = {}
         # Priority keys
-        for key in ['Tennis', 'Padel']:
+        for key in SPORTS_SUBCATEGORY_PRIORITY:
             if key in sports_dict:
                 ordered_sports[key] = sports_dict.pop(key)
         # Remaining keys (alphabetical or date sorted? currently date sorted by insertion)
         ordered_sports.update(sports_dict)
-        grouped_events['Sports'] = ordered_sports
+        grouped_events[CATEGORY_SPORTS] = ordered_sports
 
     # Generate Report
     env = Environment(loader=FileSystemLoader('.'))
-    template = env.get_template('report_template.html')
+    template = env.get_template(REPORT_TEMPLATE_FILE)
     
     output = template.render(
         grouped_events=grouped_events,
         category_order=cat_order,
-        today=datetime.date.today().strftime("%d %B %Y")
+        report_title=REPORT_TITLE,
+        report_tagline=REPORT_TAGLINE,
+        today=datetime.date.today().strftime(REPORT_TODAY_FORMAT)
     )
     
-    with open('report.html', 'w') as f:
+    with open(REPORT_OUTPUT_FILE, 'w') as f:
         f.write(output)
         
-    print(f"Report generated: report.html ({len(filtered_events)} events found)")
+    print(f"Report generated: {REPORT_OUTPUT_FILE} ({len(filtered_events)} events found)")
 
 if __name__ == "__main__":
     main()

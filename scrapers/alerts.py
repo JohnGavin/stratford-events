@@ -2,32 +2,40 @@ import requests
 import xml.etree.ElementTree as ET
 from datetime import datetime
 from utils.common import parse_event_date
+from params import (
+    ALERTS_MAX_AGE_DAYS,
+    ALERTS_QUERIES,
+    CATEGORY_NEWS,
+    GOOGLE_NEWS_RSS_URL_TEMPLATE,
+    HTTP_STATUS_OK,
+    NEWS_ITEMS_PER_QUERY,
+    NEWS_PUBDATE_FORMAT,
+    PRICE_NONE,
+    SOURCE_GOOGLE_NEWS,
+    SUB_GOOGLE_ALERTS,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_google_alerts():
     # RSS Feeds for keywords
-    queries = [
-        "Stratford London events",
-        "Queen Elizabeth Olympic Park news",
-        "UCL East events",
-        "East Bank Stratford"
-    ]
+    queries = ALERTS_QUERIES
     
     events = []
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
 
     for q in queries:
-        rss_url = f"https://news.google.com/rss/search?q={q.replace(' ', '+')}&hl=en-GB&gl=GB&ceid=GB:en"
+        rss_url = GOOGLE_NEWS_RSS_URL_TEMPLATE.format(query=q.replace(' ', '+'))
         
         try:
             res = requests.get(rss_url, headers=headers)
-            if res.status_code != 200: continue
+            if res.status_code != HTTP_STATUS_OK: continue
             
             root = ET.fromstring(res.content)
             
             # Parse Items
-            for item in root.findall('.//item')[:3]: # Top 3 per query
+            for item in root.findall('.//item')[:NEWS_ITEMS_PER_QUERY]: # Top hits per query
                 title = item.find('title').text
                 link = item.find('link').text
                 pubDate = item.find('pubDate').text
@@ -40,12 +48,12 @@ def fetch_google_alerts():
                 # RFC 822 format: "Mon, 08 Jan 2026 12:00:00 GMT"
                 date_obj = None
                 try:
-                    date_obj = datetime.strptime(pubDate, "%a, %d %b %Y %H:%M:%S %Z")
+                    date_obj = datetime.strptime(pubDate, NEWS_PUBDATE_FORMAT)
                 except:
                     pass
                 
-                # Filter old news (older than 30 days)
-                if date_obj and (datetime.now() - date_obj).days > 30:
+                # Filter old news (older than ALERTS_MAX_AGE_DAYS)
+                if date_obj and (datetime.now() - date_obj).days > ALERTS_MAX_AGE_DAYS:
                     continue
 
                 events.append({
@@ -54,10 +62,10 @@ def fetch_google_alerts():
                     'description': clean_desc,
                     'date_str': pubDate,
                     'date_obj': date_obj,
-                    'category': 'News & Alerts',
-                    'sub_category': 'Google Alerts',
-                    'price': "-",
-                    'source': 'Google News'
+                    'category': CATEGORY_NEWS,
+                    'sub_category': SUB_GOOGLE_ALERTS,
+                    'price': PRICE_NONE,
+                    'source': SOURCE_GOOGLE_NEWS
                 })
                 
         except Exception as e:

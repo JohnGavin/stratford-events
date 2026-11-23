@@ -4,7 +4,8 @@ name: Keepalive
 # workflows. GitHub disables scheduled workflows after 60 days of repository
 # inactivity; only commits/pushes count as activity, not scheduled runs.
 # This workflow runs weekly and pushes an empty commit once the repo has been
-# quiet for >= 50 days, resetting the 60-day clock with margin. It keeps itself
+# quiet for KEEPALIVE_INACTIVE_DAYS (set in params.py, the single home of every
+# tunable), resetting the 60-day clock with margin. It keeps itself
 # alive too. Re-implemented in-house (not the external keepalive-workflow
 # action) per the zero-trust external-code policy (#194). See JohnGavin/llm#656.
 
@@ -23,16 +24,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Empty commit if repo inactive >= 50 days
+      - name: Empty commit if repo inactive for KEEPALIVE_INACTIVE_DAYS
         run: |
+          limit=$(python3 -c "import params; print(params.KEEPALIVE_INACTIVE_DAYS)")
           last=$(git log -1 --format=%ct)
           now=$(date +%s)
           days=$(( (now - last) / 86400 ))
-          if [ "$days" -ge 50 ]; then
+          if [ "$days" -ge "$limit" ]; then
             git config user.name  "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit --allow-empty -m "chore: keepalive — reset scheduled-workflow inactivity clock"
             git push
           else
-            echo "Repo committed ${days}d ago (< 50) — no keepalive needed"
+            echo "Repo committed ${days}d ago (< ${limit}) — no keepalive needed"
           fi

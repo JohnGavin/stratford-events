@@ -1,0 +1,16 @@
+# Allow-list for tests/test_params_single_home.py.
+# One entry per line, tab separated: path<TAB>repr-of-literal<TAB>reason
+# An entry with no reason, or one that no longer matches a real literal, fails the build.
+scrapers/st_brides.py	'class'	HTML attribute name read from the page (item.get('class')); it equals the Sadler's Wells title keyword 'class' only by coincidence
+scrapers/st_stephen.py	'html.parser'	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	'See website'	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	12	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	30	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	15	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	'Lunchtime Concerts / Free Events'	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	'St Stephen Walbrook'	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	'Free'	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	7	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	10	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	300	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending
+scrapers/st_stephen.py	'%I:%M%p'	scrapers/st_stephen.py is not moved yet: the privacy gate (uk-postcode rule) blocks any commit that touches the file; owner decision pending

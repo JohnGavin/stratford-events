@@ -1,13 +1,19 @@
 from datetime import datetime, date, timedelta
 import re
 from dateutil import parser
+from params import (
+    DATE_SEE_WEBSITE,
+    DISPLAY_DATE_FORMAT,
+    DISPLAY_TIME_SUFFIX_FORMAT,
+    KEYWORD_FREE,
+    NEWS_CATEGORIES,
+    NEWS_MAX_AGE_DAYS,
+    PRICE_CHECK_WEBSITE,
+    PRICE_FREE,
+    REPORT_HORIZON_WEEKS,
+)
 
-# One home for the report's date window (issue #8).
-# Defaults chosen by the implementer; the owner may change them here only.
-REPORT_HORIZON_WEEKS = 8     # events dated later than today + this many weeks are dropped
-NEWS_MAX_AGE_DAYS = 14       # news/offer items older than this are dropped
-NEWS_CATEGORIES = ('News & Alerts', 'Dining & Offers')
-DISPLAY_DATE_FORMAT = "%a, %d %b %Y"   # time ' @ HH:MM' is appended when not midnight
+# The report's date window and formats live in params.py (issue #8).
 
 
 def parse_event_date(date_str):
@@ -15,7 +21,7 @@ def parse_event_date(date_str):
     Parses a date string into a datetime object.
     Returns datetime object or None.
     """
-    if not date_str or date_str.lower() in ['see website', 'check website']:
+    if not date_str or date_str.lower() in [DATE_SEE_WEBSITE.lower(), PRICE_CHECK_WEBSITE.lower()]:
         return None
 
     try:
@@ -35,7 +41,7 @@ def format_event_date(dt):
     """The single display format for every row in the report."""
     text = dt.strftime(DISPLAY_DATE_FORMAT)
     if (dt.hour, dt.minute) != (0, 0):
-        text += dt.strftime(" @ %H:%M")
+        text += dt.strftime(DISPLAY_TIME_SUFFIX_FORMAT)
     return text
 
 
@@ -133,19 +139,19 @@ def normalize_price(price_text):
     Extracts the price range.
     """
     if not price_text:
-        return "Check website"
+        return PRICE_CHECK_WEBSITE
 
     price_text = price_text.lower()
-    if 'free' in price_text:
-        return "Free"
+    if KEYWORD_FREE in price_text:
+        return PRICE_FREE
 
     # Find numbers with £
     prices = re.findall(r'£(\d+(?:\.\d{2})?)', price_text)
     if prices:
         vals = sorted([float(p) for p in prices])
-        if not vals: return "Check website"
+        if not vals: return PRICE_CHECK_WEBSITE
         if len(vals) == 1:
             return f"£{vals[0]:.2f}"
         return f"£{vals[0]:.2f} - £{vals[-1]:.2f}"
 
-    return "Check website"
+    return PRICE_CHECK_WEBSITE

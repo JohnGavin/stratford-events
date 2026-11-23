@@ -3,12 +3,26 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
+from params import (
+    CATEGORY_STEM,
+    DATE_SEE_WEBSITE,
+    DESCRIPTION_MAX_CHARS,
+    HTML_PARSER,
+    PRICE_CHECK_WEBSITE,
+    PRICE_FREE,
+    SOURCE_VA,
+    SUB_MUSEUM,
+    USER_AGENT_BROWSER,
+    VA_BASE_URL,
+    VA_EVENTS_URL,
+    VA_VENUE_TEXTS,
+)
 
 def fetch_va_events():
     # V&A uses a filtered URL or we can scrape the main list and filter by venue attribute
-    url = "https://www.vam.ac.uk/whatson?venue=east-storehouse&venue=east-museum"
+    url = VA_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -18,7 +32,7 @@ def fetch_va_events():
         print(f"Error fetching V&A events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
     
     # Items usually in b-card or similar
@@ -34,7 +48,7 @@ def fetch_va_events():
         # Venue check if scraping main list
         venue_tag = item.find(class_=re.compile(r'venue'))
         venue_text = venue_tag.get_text(strip=True) if venue_tag else ""
-        if 'East' not in venue_text and 'Storehouse' not in venue_text:
+        if not any(v in venue_text for v in VA_VENUE_TEXTS):
             if not item.has_attr('data-wo-venue'):
                 continue
                 
@@ -46,23 +60,23 @@ def fetch_va_events():
         event_url = url
         if link and link.get('href'):
             event_url = link.get('href')
-            if event_url.startswith('/'): event_url = "https://www.vam.ac.uk" + event_url
+            if event_url.startswith('/'): event_url = VA_BASE_URL + event_url
 
         # Deep scrape for details
         description = ""
-        date_raw = "See website"
-        price_str = "Check website"
+        date_raw = DATE_SEE_WEBSITE
+        price_str = PRICE_CHECK_WEBSITE
         
         try:
             res_d = requests.get(event_url, headers=headers)
-            soup_d = BeautifulSoup(res_d.text, 'html.parser')
+            soup_d = BeautifulSoup(res_d.text, HTML_PARSER)
             
             # Summary
             intro = soup_d.find('div', class_='b-text-intro')
             if intro: description = intro.get_text(strip=True)
             else:
                 p = soup_d.find('p')
-                if p: description = p.get_text(strip=True)[:300]
+                if p: description = p.get_text(strip=True)[:DESCRIPTION_MAX_CHARS]
 
             # Date
             # Usually in a header or info block
@@ -70,7 +84,7 @@ def fetch_va_events():
             if date_info: date_raw = date_info.get_text(strip=True)
             
             # Price
-            if 'Free' in soup_d.get_text(): price_str = "Free"
+            if PRICE_FREE in soup_d.get_text(): price_str = PRICE_FREE
             else: price_str = normalize_price(soup_d.get_text())
             
         except:
@@ -84,10 +98,10 @@ def fetch_va_events():
             'description': description,
             'date_str': date_raw,
             'date_obj': date_obj,
-            'category': 'STEM / Factual',
-            'sub_category': 'Museum / Exhibition',
+            'category': CATEGORY_STEM,
+            'sub_category': SUB_MUSEUM,
             'price': price_str,
-            'source': 'V&A East'
+            'source': SOURCE_VA
         })
         
     return events

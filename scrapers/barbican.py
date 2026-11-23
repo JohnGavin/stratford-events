@@ -3,11 +3,23 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
+from params import (
+    BARBICAN_BASE_URL,
+    BARBICAN_EVENTS_URL,
+    BARBICAN_MAX_LOOKAHEAD_DAYS,
+    CATEGORY_THEATRE,
+    DATE_SEE_WEBSITE,
+    HTML_PARSER,
+    PRICE_CHECK_WEBSITE,
+    SOURCE_BARBICAN,
+    SUB_BARBICAN,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_barbican_events():
-    url = "https://www.barbican.org.uk/whats-on"
+    url = BARBICAN_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -17,7 +29,7 @@ def fetch_barbican_events():
         print(f"Error fetching Barbican events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
     
     articles = soup.find_all('article', class_='listing--event')
@@ -32,7 +44,7 @@ def fetch_barbican_events():
         link_tag = art.find('a', class_='search-listing__link')
         event_url = url
         if link_tag and link_tag.get('href'):
-            event_url = "https://www.barbican.org.uk" + link_tag.get('href')
+            event_url = BARBICAN_BASE_URL + link_tag.get('href')
             
         # Description
         description = ""
@@ -41,13 +53,13 @@ def fetch_barbican_events():
             description = desc_div.get_text(strip=True)
 
         # Deep Scrape for Date & Price
-        date_raw = "See website"
-        price_str = "Check website"
+        date_raw = DATE_SEE_WEBSITE
+        price_str = PRICE_CHECK_WEBSITE
         date_obj = None
         
         try:
             res_d = requests.get(event_url, headers=headers)
-            soup_d = BeautifulSoup(res_d.text, 'html.parser')
+            soup_d = BeautifulSoup(res_d.text, HTML_PARSER)
             
             # Date: Look for date block
             # Barbican detail pages usually have a hero block with date
@@ -69,7 +81,7 @@ def fetch_barbican_events():
             
         date_obj = parse_event_date(date_raw)
         
-        # 14-Day Filter
+        # Lookahead filter (BARBICAN_MAX_LOOKAHEAD_DAYS)
         if date_obj:
             now = datetime.now()
             # Handle potential timezone mismatch
@@ -79,8 +91,8 @@ def fetch_barbican_events():
                 now = now.astimezone()
                 
             delta = date_obj - now
-            # Filter if > 14 days in future
-            if delta.days > 14:
+            # Filter if further ahead than the lookahead
+            if delta.days > BARBICAN_MAX_LOOKAHEAD_DAYS:
                 continue
                 
         # If no date found, we might keep it or drop it. 
@@ -93,10 +105,10 @@ def fetch_barbican_events():
             'description': description,
             'date_str': date_raw,
             'date_obj': date_obj,
-            'category': 'Theatre', # Barbican is mostly Arts/Theatre/Music
-            'sub_category': 'Barbican Centre',
+            'category': CATEGORY_THEATRE, # Barbican is mostly Arts/Theatre/Music
+            'sub_category': SUB_BARBICAN,
             'price': price_str,
-            'source': 'Barbican'
+            'source': SOURCE_BARBICAN
         })
         
     return events

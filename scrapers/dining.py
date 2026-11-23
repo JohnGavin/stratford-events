@@ -2,32 +2,42 @@ import requests
 import xml.etree.ElementTree as ET
 import re
 from datetime import datetime
+from params import (
+    CATEGORY_DINING,
+    DINING_GENERIC_KEYWORDS,
+    DINING_HTTP_TIMEOUT_SECONDS,
+    DINING_MAX_AGE_DAYS,
+    DINING_QUERIES,
+    DINING_STRATFORD_KEYWORDS,
+    GOOGLE_NEWS_RSS_URL_TEMPLATE,
+    HTTP_STATUS_OK,
+    NEWS_ITEMS_PER_QUERY,
+    NEWS_PUBDATE_FORMAT,
+    PRICE_NONE,
+    SOURCE_GOOGLE_NEWS,
+    SUB_DINING_NEWS,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_dining_news():
     """
     Fetches news about restaurant openings and offers in Stratford/Westfield via Google News RSS.
     """
-    queries = [
-        "Stratford London new restaurant",
-        "Westfield Stratford City dining news",
-        "Stratford E20 restaurant opening",
-        "Stratford London food offers",
-        "Westfield Stratford new opening"
-    ]
+    queries = DINING_QUERIES
     
     events = []
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
 
     seen_titles = set()
 
     for q in queries:
-        rss_url = f"https://news.google.com/rss/search?q={q.replace(' ', '+')}&hl=en-GB&gl=GB&ceid=GB:en"
+        rss_url = GOOGLE_NEWS_RSS_URL_TEMPLATE.format(query=q.replace(' ', '+'))
         
         try:
-            res = requests.get(rss_url, headers=headers, timeout=10)
-            if res.status_code != 200: 
+            res = requests.get(rss_url, headers=headers, timeout=DINING_HTTP_TIMEOUT_SECONDS)
+            if res.status_code != HTTP_STATUS_OK: 
                 continue
             
             # Google News RSS is XML
@@ -36,8 +46,8 @@ def fetch_dining_news():
             except ET.ParseError:
                 continue
             
-            # Parse Items (Top 3 per query to avoid noise)
-            for item in root.findall('.//item')[:3]: 
+            # Parse Items (top hits per query to avoid noise)
+            for item in root.findall('.//item')[:NEWS_ITEMS_PER_QUERY]: 
                 title = item.find('title').text
                 if title in seen_titles:
                     continue
@@ -54,33 +64,18 @@ def fetch_dining_news():
                 # RFC 822 format: "Mon, 08 Jan 2026 12:00:00 GMT"
                 date_obj = None
                 try:
-                    date_obj = datetime.strptime(pubDate, "%a, %d %b %Y %H:%M:%S %Z")
+                    date_obj = datetime.strptime(pubDate, NEWS_PUBDATE_FORMAT)
                 except:
                     pass
                 
-                # Filter old news (older than 60 days - openings might be relevant for a while)
-                if date_obj and (datetime.now() - date_obj).days > 60:
+                # Filter old news (older than DINING_MAX_AGE_DAYS - openings might be relevant for a while)
+                if date_obj and (datetime.now() - date_obj).days > DINING_MAX_AGE_DAYS:
                     continue
 
                 # Filter generic London-wide articles - only keep Stratford-specific
                 combined_text = (title + " " + clean_desc).lower()
-                stratford_keywords = [
-                    'stratford', 'westfield', 'e20', 'e15',
-                    'olympic park', 'queen elizabeth',
-                    'here east', 'east village', 'east bank'
-                ]
-                generic_keywords = [
-                    'best restaurants in london',
-                    'hot new openings',
-                    'mapped:',
-                    'london restaurants',
-                    'openings coming soon',
-                    'check your area',
-                    'top restaurants',
-                    'restaurant guide',
-                    'where to eat in london',
-                    'best places to eat',
-                ]
+                stratford_keywords = DINING_STRATFORD_KEYWORDS
+                generic_keywords = DINING_GENERIC_KEYWORDS
                 # Skip if it matches generic patterns
                 if any(g in combined_text for g in generic_keywords):
                     continue
@@ -94,10 +89,10 @@ def fetch_dining_news():
                     'description': clean_desc,
                     'date_str': pubDate,
                     'date_obj': date_obj,
-                    'category': 'Dining & Offers',
-                    'sub_category': 'News & Openings',
-                    'price': "-",
-                    'source': 'Google News'
+                    'category': CATEGORY_DINING,
+                    'sub_category': SUB_DINING_NEWS,
+                    'price': PRICE_NONE,
+                    'source': SOURCE_GOOGLE_NEWS
                 })
                 
         except Exception as e:

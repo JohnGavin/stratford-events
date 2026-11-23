@@ -3,11 +3,24 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
+from params import (
+    CATEGORY_THEATRE,
+    DATE_SEE_WEBSITE,
+    GSMD_BASE_URL,
+    GSMD_EAST_KEYWORDS,
+    GSMD_EVENTS_URL,
+    GSMD_MAX_LOOKAHEAD_DAYS,
+    HTML_PARSER,
+    PRICE_CHECK_WEBSITE,
+    SOURCE_GSMD,
+    SUB_GSMD,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_gsmd_events():
-    url = "https://www.gsmd.ac.uk/whats-on"
+    url = GSMD_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -17,7 +30,7 @@ def fetch_gsmd_events():
         print(f"Error fetching GSMD events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
     
     # GSMD listing structure (usually cards)
@@ -36,7 +49,7 @@ def fetch_gsmd_events():
         link_tag = card.find('a')
         if not link_tag: continue
         href = link_tag.get('href')
-        if href.startswith('/'): href = "https://www.gsmd.ac.uk" + href
+        if href.startswith('/'): href = GSMD_BASE_URL + href
         event_url = href
         
         # We need to filter for LOCATION = Stratford/East
@@ -48,26 +61,26 @@ def fetch_gsmd_events():
         # GSMD is mostly Barbican. We strictly want E15/E20.
         # Keywords: "East", "Stratford", "Elizabeth Park"
         is_east = False
-        if any(x in card_text for x in ['Stratford', 'East Bank', 'Olympic Park']):
+        if any(x in card_text for x in GSMD_EAST_KEYWORDS):
             is_east = True
         
         # Deep Scrape for details & location confirmation
         description = ""
-        date_raw = "See website"
-        price_str = "Check website"
+        date_raw = DATE_SEE_WEBSITE
+        price_str = PRICE_CHECK_WEBSITE
         duration = ""
         location = "Unknown"
         
         try:
             res_d = requests.get(event_url, headers=headers)
-            soup_d = BeautifulSoup(res_d.text, 'html.parser')
+            soup_d = BeautifulSoup(res_d.text, HTML_PARSER)
             
             # Location check in detail page
             # Look for "Venue" or "Location" label
             body_text = soup_d.get_text()
             if not is_east:
                 # Double check detail page
-                if any(x in body_text for x in ['Stratford', 'East Bank', 'Olympic Park']):
+                if any(x in body_text for x in GSMD_EAST_KEYWORDS):
                     is_east = True
             
             if not is_east:
@@ -101,7 +114,7 @@ def fetch_gsmd_events():
 
         date_obj = parse_event_date(date_raw)
         
-        # 14-Day Filter (User Request)
+        # Lookahead filter (GSMD_MAX_LOOKAHEAD_DAYS; user request)
         if date_obj:
             now = datetime.now()
             # Handle potential timezone mismatch
@@ -111,7 +124,7 @@ def fetch_gsmd_events():
                 now = now.astimezone()
                 
             delta = date_obj - now
-            if delta.days > 14:
+            if delta.days > GSMD_MAX_LOOKAHEAD_DAYS:
                 continue
         
         events.append({
@@ -120,10 +133,10 @@ def fetch_gsmd_events():
             'description': description,
             'date_str': date_raw,
             'date_obj': date_obj,
-            'category': 'Theatre', # GSMD is mostly drama/music
-            'sub_category': 'GSMD East',
+            'category': CATEGORY_THEATRE, # GSMD is mostly drama/music
+            'sub_category': SUB_GSMD,
             'price': price_str,
-            'source': 'Guildhall School'
+            'source': SOURCE_GSMD
         })
         
     return events

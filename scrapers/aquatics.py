@@ -3,11 +3,26 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date
+from params import (
+    AQUATICS_DISRUPTION_KEYWORDS,
+    AQUATICS_EVENTS_URL,
+    CATEGORY_SPORTS,
+    DATE_SEE_WEBSITE,
+    DESCRIPTION_MAX_CHARS,
+    DISPLAY_DATE_FORMAT,
+    HTML_PARSER,
+    ISO_DATE_FORMAT,
+    MONTHS_PER_YEAR,
+    PRICE_CHECK_WEBSITE,
+    SOURCE_AQUATICS,
+    SUB_AQUATICS,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_aquatics_events():
-    url = "https://www.londonaquaticscentre.org/events/"
+    url = AQUATICS_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
 
     try:
@@ -17,15 +32,15 @@ def fetch_aquatics_events():
         print(f"Error fetching Aquatics events: {e}")
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
 
     # Current month and next month are allowed for disruption notices
     now = datetime.now()
     current_month = now.month
     current_year = now.year
-    next_month = current_month + 1 if current_month < 12 else 1
-    next_year = current_year if current_month < 12 else current_year + 1
+    next_month = current_month + 1 if current_month < MONTHS_PER_YEAR else 1
+    next_year = current_year if current_month < MONTHS_PER_YEAR else current_year + 1
 
     # Target The Events Calendar structure
     rows = soup.find_all(class_='tribe-events-calendar-list__event-row')
@@ -47,23 +62,21 @@ def fetch_aquatics_events():
             event_url = link_tag.get('href')
 
         # Date
-        date_str = "See website"
+        date_str = DATE_SEE_WEBSITE
         date_obj = None
 
         time_tag = row.find('time')
         if time_tag and time_tag.get('datetime'):
             raw_date = time_tag.get('datetime')
             try:
-                date_obj = datetime.strptime(raw_date, "%Y-%m-%d")
-                date_str = date_obj.strftime("%a, %d %b %Y")
+                date_obj = datetime.strptime(raw_date, ISO_DATE_FORMAT)
+                date_str = date_obj.strftime(DISPLAY_DATE_FORMAT)
             except (ValueError, TypeError):
                 pass
 
         # Filter disruption/closure notices by date proximity
         title_lower = title.lower()
-        is_disruption = any(x in title_lower for x in [
-            'disruption', 'closure', 'update', 'info', 'notice'
-        ])
+        is_disruption = any(x in title_lower for x in AQUATICS_DISRUPTION_KEYWORDS)
 
         if is_disruption:
             if date_obj:
@@ -82,7 +95,7 @@ def fetch_aquatics_events():
         description = ""
         desc_div = row.find(class_='tribe-events-calendar-list__event-description')
         if desc_div:
-            description = desc_div.get_text(strip=True)[:300] + "..."
+            description = desc_div.get_text(strip=True)[:DESCRIPTION_MAX_CHARS] + "..."
 
         events.append({
             'title': title,
@@ -90,10 +103,10 @@ def fetch_aquatics_events():
             'description': description,
             'date_str': date_str,
             'date_obj': date_obj,
-            'category': 'Sports',
-            'sub_category': 'Swimming / Aquatics',
-            'price': "Check website",
-            'source': 'London Aquatics Centre'
+            'category': CATEGORY_SPORTS,
+            'sub_category': SUB_AQUATICS,
+            'price': PRICE_CHECK_WEBSITE,
+            'source': SOURCE_AQUATICS
         })
 
     return events

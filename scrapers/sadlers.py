@@ -3,14 +3,30 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 from utils.common import parse_event_date, normalize_price
+from params import (
+    CATEGORY_COMMUNITY,
+    DATE_SEE_WEBSITE,
+    HTML_PARSER,
+    PRICE_CHECK_WEBSITE,
+    SADLERS_BASE_URL,
+    SADLERS_DESCRIPTION,
+    SADLERS_EVENTS_URL,
+    SADLERS_FREE_KEYWORD,
+    SADLERS_PERFORMANCE_KEYWORD,
+    SADLERS_TITLE_KEYWORDS,
+    SADLERS_VENUE_TEXTS,
+    SOURCE_SADLERS,
+    SUB_SADLERS,
+    USER_AGENT_BROWSER,
+)
 
 def fetch_sadlers_events():
     # Sadler's Wells East specific URL or search
     # Often they list community events separately.
     # Trying the main what's on with query for East
-    url = "https://www.sadlerswells.com/whats-on/?location=sadlers-wells-east"
+    url = SADLERS_EVENTS_URL
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "User-Agent": USER_AGENT_BROWSER
     }
     
     try:
@@ -20,7 +36,7 @@ def fetch_sadlers_events():
     except:
         return []
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, HTML_PARSER)
     events = []
     
     # This selector is a guess based on standard implementations, 
@@ -30,7 +46,7 @@ def fetch_sadlers_events():
     
     for card in cards:
         text = card.get_text(strip=True)
-        if "Sadler's Wells East" not in text and "The Dance Floor" not in text:
+        if not any(v in text for v in SADLERS_VENUE_TEXTS):
             continue
             
         title_tag = card.find(re.compile(r'h[2-4]'))
@@ -44,34 +60,34 @@ def fetch_sadlers_events():
             # User said "not necessarily related to dance"
             pass
             
-        keywords = ['workshop', 'talk', 'social', 'free', 'class', 'community', 'floor']
+        keywords = SADLERS_TITLE_KEYWORDS
         if not any(k in t_low for k in keywords):
             continue
 
         # Ignore straight dance performances
         # User said "mostly dance events which can be ignored"
-        if 'performance' in t_low and 'free' not in t_low:
+        if SADLERS_PERFORMANCE_KEYWORD in t_low and SADLERS_FREE_KEYWORD not in t_low:
             continue
 
         # Extract info
         link = card.find('a')
         event_url = url
         if link and link.get('href'):
-            event_url = "https://www.sadlerswells.com" + link.get('href')
+            event_url = SADLERS_BASE_URL + link.get('href')
             
-        date_raw = "See website"
+        date_raw = DATE_SEE_WEBSITE
         # Try to find date in card
         
         events.append({
             'title': title,
             'url': event_url,
-            'description': "Community event at Sadler's Wells East.",
+            'description': SADLERS_DESCRIPTION,
             'date_str': date_raw,
             'date_obj': None, # Needs parsing
-            'category': 'Community',
-            'sub_category': "Sadler's Wells",
-            'price': "Check website",
-            'source': "Sadler's Wells East"
+            'category': CATEGORY_COMMUNITY,
+            'sub_category': SUB_SADLERS,
+            'price': PRICE_CHECK_WEBSITE,
+            'source': SOURCE_SADLERS
         })
         
     return events
